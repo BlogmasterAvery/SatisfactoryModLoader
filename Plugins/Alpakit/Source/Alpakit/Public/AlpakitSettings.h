@@ -8,22 +8,10 @@
 #include "AlpakitSettings.generated.h"
 
 USTRUCT()
-struct FAlpakitModDependency
-{
-	GENERATED_BODY()
-	/* mod_reference of your dependency */
-    UPROPERTY(EditAnywhere, config)
-    FString Mod;
-
-    /* A version constraint (ex. ^2.1.0) */
-	UPROPERTY(EditAnywhere, config)
-    FString Constraint;
-};
-
-USTRUCT()
 struct FAlpakitMod
 {
 	GENERATED_BODY()
+public:
 	/* Should this mod be paked? */
 	UPROPERTY(EditAnywhere, config)
 	bool Enabled = true;
@@ -46,14 +34,6 @@ struct FAlpakitMod
 	UPROPERTY(EditAnywhere, config)
 	TArray<FString> Authors;
 
-	/* Mods that are required for running your mod */
-	UPROPERTY(EditAnywhere, config)
-	TArray<FAlpakitModDependency> Dependencies;
-	
-	/* Mods that that your mod can integrate with, but are not required */
-	UPROPERTY(EditAnywhere, config)
-    TArray<FAlpakitModDependency> OptionalDependencies;
-	
 	/* Can include paths to vanilla assets, or other mod assets that you wish to replace with your version. You don't need to add your mod here */
 	UPROPERTY(EditAnywhere, config)
 	TArray<FString> OverwritePaths;
