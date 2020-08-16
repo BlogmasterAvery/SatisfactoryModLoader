@@ -169,7 +169,7 @@ void SAlpakaWidget::CookDone(FString result, double runtime,UAlpakitSettings* Se
 		TArray<FString> FilesToPak;
 		FFileHelper::LoadFileToStringArray(FilesToPak, *PakListPath);
 		FVersion smlVersion = SML::GetModLoaderVersion();
-		FString smlVersionString = FString::Printf(TEXT("%llu.%llu.%llu"), smlVersion.Major, smlVersion.Minor, smlVersion.Patch);
+		FString smlVersionString = FString::Printf(TEXT("^%llu.%llu.%llu"), smlVersion.Major, smlVersion.Minor, smlVersion.Patch);
 
 		int modsCopied = 0;
 		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
