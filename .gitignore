@@ -72,3 +72,6 @@ Plugins/Wwise/*
 # Alpakit Mods folder
 Mods/*
 *.pak
+
+# Models
+*.fbx
