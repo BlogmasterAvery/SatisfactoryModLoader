@@ -1,7 +1,6 @@
+// Copyright Coffee Stain Studios. All Rights Reserved.
+
 #pragma once
-#include "Array.h"
-#include "UnrealString.h"
-#include "UObject/Class.h"
 
 #include "Engine/AssetManager.h"
 #include "IncludeInBuild.h"
@@ -33,7 +32,4 @@ protected:
 	/** During cooking step, what's the minimum value of EIncludeInBuild on asset for it to be included in cooks */
 	EIncludeInBuilds mMinimumIncludeInBuildFlag;
 #endif
-
-public:
-	FORCEINLINE ~UFGAssetManager() = default;
 };

@@ -1,6 +1,6 @@
+// Copyright Coffee Stain Studios. All Rights Reserved.
+
 #pragma once
-#include "UnrealString.h"
-#include "UObject/Class.h"
 
 #include "FGMapAreaZoneDescriptor.generated.h"
 
@@ -18,7 +18,4 @@ protected:
 	/** Descriptive name of the zone type, this will be sent to music so that it can depend on it */
 	UPROPERTY( EditDefaultsOnly, Category = "Description" )
 	FString mZoneType;
-
-public:
-	FORCEINLINE ~UFGMapAreaZoneDescriptor() = default;
 };

@@ -1,12 +1,9 @@
-// Copyright 2016 Coffee Stain Studios. All Rights Reserved.
+// Copyright Coffee Stain Studios. All Rights Reserved.
 
 #pragma once
-#include "Engine/StaticMesh.h"
-#include "Array.h"
-#include "GameFramework/Actor.h"
-#include "UObject/Class.h"
 
-#include "FGBuildable.h"
+#include "Buildables/FGBuildable.h"
+#include "FGCircuit.h"
 #include "FGBuildableWire.generated.h"
 
 /**
@@ -35,6 +32,9 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Buildable|Wire" )
 	FORCEINLINE float GetLength() const { return FVector::Distance( mLocations[ 0 ], mLocations[ 1 ] ); }
 
+	/** Location of point 0 or 1 */
+	FORCEINLINE FVector GetLocation( int32 index ) const { return mLocations[ FMath::Min( index, 1  ) ]; }
+
 	/** @return The connection connected at the end of the wire. */
 	UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "Buildable|Wire" )
 	FORCEINLINE class UFGCircuitConnectionComponent* GetConnection( int32 index ) const { return index == 0 || index == 1 ? mConnections[ index ].Get() : nullptr; }
@@ -61,7 +61,7 @@ public:
 	void UpdateWireMesh();
 
 	/** Internal helper function to connect this wire. */ //[DavalliusA:Sun/16-02-2020] moved this out as it was needed for upgrades. If there is a reason to hide it, please make that clear, or I won't know why not to expose it.
-	void Connect( class UFGCircuitConnectionComponent* first, class UFGCircuitConnectionComponent* second );
+	bool Connect( class UFGCircuitConnectionComponent* first, class UFGCircuitConnectionComponent* second );
 
 private:
 
@@ -83,6 +83,10 @@ public:
 	float mLengthPerCost;
 
 protected:
+	/** Circuit type this wire is used for. Can only be one, e.g. power or logic. */
+	UPROPERTY( EditDefaultsOnly, Category = "Wire" )
+	TSubclassOf< UFGCircuit > mCircuitType;
+
 	/** Mesh used to visualize the power line */
 	UPROPERTY( BlueprintReadOnly, VisibleAnywhere, Category = "Wire" )
 	UStaticMeshComponent* mWireMesh;
@@ -104,7 +108,4 @@ private:
 	/** The two locations this wire span. */
 	UPROPERTY( ReplicatedUsing = OnRep_Locations, Meta = (NoAutoJson = true))
 	FVector mLocations[ 2 ];
-
-public:
-	FORCEINLINE ~AFGBuildableWire() = default;
 };

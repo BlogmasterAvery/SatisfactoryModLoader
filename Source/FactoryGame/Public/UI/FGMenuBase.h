@@ -1,5 +1,6 @@
+// Copyright Coffee Stain Studios. All Rights Reserved.
+
 #pragma once
-#include "UObject/Class.h"
 
 #include "Blueprint/UserWidget.h"
 #include "FGMenuBase.generated.h"
@@ -34,7 +35,4 @@ protected:
 	/** Cached switcher owning this widget */
 	UPROPERTY()
 	class UFGWidgetSwitcher* mCachedOwner;
-
-public:
-	FORCEINLINE ~UFGMenuBase() = default;
 };
