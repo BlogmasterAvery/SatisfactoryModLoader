@@ -1,0 +1,26 @@
+{
+	"FileVersion": 3,
+	"Version": 2,
+	"VersionName": "2.0.0",
+	"SemVersion": "2.0.0",
+	"FriendlyName": "NobeliskJumper",
+	"Description": "A special nobelisk detonator that deals no self-damage",
+	"Category": "Other",
+	"CreatedBy": "Avery",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Plugins": [
+		{
+			"Name": "SML",
+			"SemVersion": "^3.0.0",
+			"bIsOptional": false,
+			"Enabled": true
+		}
+	]
+}

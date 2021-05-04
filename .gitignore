@@ -78,7 +78,7 @@ Configs/*
 
 *.pak
 
-Plugins/*
+#Plugins/*
 !Plugins/SML/
 !Plugins/SMLEditor/
 !Plugins/ExampleMod/

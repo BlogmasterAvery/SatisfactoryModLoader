@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 3,
+	"SemVersion": "3.1.0",
+	"FriendlyName": "Hopper",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "Avery",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Plugins": [
+		{
+			"Name": "SML",
+			"SemVersion": "^3.0.0",
+			"Enabled": true
+		},
+		{
+			"Name": "avMallLib",
+			"SemVersion": "^2.0.1",
+			"Enabled": true
+		}
+	]
+}
