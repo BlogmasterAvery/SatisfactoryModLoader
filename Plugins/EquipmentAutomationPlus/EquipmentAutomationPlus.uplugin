@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0",
+	"Version": 2,
+	"SemVersion": "2.0.0",
 	"FriendlyName": "EquipmentAutomationPlus",
 	"Description": "",
 	"Category": "Other",
@@ -13,5 +13,17 @@
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
-	"Installed": false
+	"Installed": false,
+	"Plugins": [
+		{
+			"Name": "SML",
+			"SemVersion": "^3.1.0",
+			"Enabled": true
+		},
+		{
+			"Name": "EquipmentAutomation",
+			"SemVersion": "^2.0.0",
+			"Enabled": true
+		}
+	]
 }
