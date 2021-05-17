@@ -154,7 +154,7 @@ protected:
 	TSubclassOf< UFGCircuit > mCircuitType;
 
 	/** How many connections this component can have connected. */
-	UPROPERTY( EditDefaultsOnly, Category = "Connection" )
+	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Category = "Connection" )
 	int32 mMaxNumConnectionLinks;
 
 	/** This connection is hidden and can only be connected through the code. E.g. powered walls have a hidden connection all machines connect to. */

@@ -1,8 +1,8 @@
 {
 	"FileVersion": 3,
-	"Version": 2,
-	"VersionName": "2.1.0",
-	"FriendlyName": "SafeTWalkways",
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "UniversalDaisyChain",
 	"Description": "",
 	"Category": "Other",
 	"CreatedBy": "Avery",
@@ -13,13 +13,5 @@
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
-	"Installed": false,
-	"Plugins": [
-		{
-			"Name": "SML",
-			"SemVersion": "^3.1.0",
-			"bIsOptional": false,
-			"Enabled": true
-		}
-	]
+	"Installed": false
 }

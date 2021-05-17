@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
-	"Version": 2,
-	"VersionName": "2.1.0",
-	"FriendlyName": "SafeTWalkways",
-	"Description": "",
+	"Version": 1,
+	"SemVersion": "1.0.0",
+	"FriendlyName": "BeltfedBiomassBurner",
+	"Description": "Adds a biomass burner with a belt input",
 	"Category": "Other",
 	"CreatedBy": "Avery",
 	"CreatedByURL": "",

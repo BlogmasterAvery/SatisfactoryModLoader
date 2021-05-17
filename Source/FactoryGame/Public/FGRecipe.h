@@ -116,11 +116,11 @@ public: // MODDING EDIT: protected -> public
 	EHologramSplinePathMode mLastSplineMode;
 
 	/** Ingredients needed to produce the products. */
-	UPROPERTY( BlueprintReadWrite, Category = "Recipe" )
+	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Category = "Recipe" )
 	TArray< FItemAmount > mIngredients;
 	
 	/** The products produced from this recipe. */
-	UPROPERTY( BlueprintReadWrite, Category = "Recipe" )
+	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Category = "Recipe" )
 	TArray< FItemAmount > mProduct;
 
 	/** The overridden category. If not overridden we return the item category given by the produced item */
@@ -140,7 +140,7 @@ public: // MODDING EDIT: protected -> public
 	float mManualManufacturingMultiplier;
 
 	/** Defines where this recipe can be produced */
-	UPROPERTY( BlueprintReadWrite, Meta = ( MustImplement = "FGRecipeProducerInterface", Category = "Recipe" ) )
+	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Meta = ( MustImplement = "FGRecipeProducerInterface", Category = "Recipe" ) )
 	TArray< TSoftClassPtr< UObject > > mProducedIn;
 
 	/** The events this recipe are present in */

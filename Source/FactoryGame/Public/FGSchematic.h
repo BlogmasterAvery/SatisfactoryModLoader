@@ -207,7 +207,7 @@ public: // MODDING EDIT: protected -> public
 	TArray< TSubclassOf<UFGSchematic> > mRelevantShopSchematics;
 
 	/** The unlocks you get when purchasing */
-	UPROPERTY( EditDefaultsOnly, Instanced, Category = "Unlocks" )
+	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Instanced, Category = "Unlocks" )
 	TArray< class UFGUnlock* > mUnlocks;
 
 	/** Icon used when displaying this schematic */

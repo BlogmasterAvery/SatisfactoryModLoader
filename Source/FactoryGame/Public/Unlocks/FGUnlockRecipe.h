@@ -33,7 +33,7 @@ public:
 
 protected:
 	/** The recipes you get from this unlock */
-	UPROPERTY( EditDefaultsOnly )
+	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly )
 	TArray< TSubclassOf< class UFGRecipe > > mRecipes;
 
 };
