@@ -1,8 +1,9 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0.0",
-	"FriendlyName": "LinearMotion",
+	"Version": 2,
+	"VersionName": "2.0.0",
+	"SemVersion": "2.0.0",
+	"FriendlyName": "Linear Motion",
 	"Description": "Get Moving!",
 	"Category": "Other",
 	"CreatedBy": "D4rkL0rd",
@@ -13,5 +14,12 @@
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
-	"Installed": false
+	"Installed": false,
+	"Plugins": [
+    {
+      "Name": "SML",
+      "SemVersion": "^3.0.0",
+      "Enabled": true
+    }
+  ]
 }
