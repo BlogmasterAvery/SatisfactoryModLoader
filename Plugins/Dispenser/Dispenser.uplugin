@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 3,
-	"SemVersion": "3.2.0",
+	"SemVersion": "3.2.1",
 	"FriendlyName": "Dispenser",
 	"Description": "",
 	"Category": "Other",
