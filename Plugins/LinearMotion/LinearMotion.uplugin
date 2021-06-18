@@ -1,12 +1,11 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
-	"VersionName": "2.0.0",
-	"SemVersion": "2.0.0",
+	"SemVersion": "2.0.1",
 	"FriendlyName": "Linear Motion",
 	"Description": "Get Moving!",
 	"Category": "Other",
-	"CreatedBy": "D4rkL0rd",
+	"CreatedBy": "D4rkL0rd, Avery, DeanTendo",
 	"CreatedByURL": "",
 	"DocsURL": "",
 	"MarketplaceURL": "",
@@ -16,10 +15,9 @@
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"Plugins": [
-    {
-      "Name": "SML",
-      "SemVersion": "^3.0.0",
-      "Enabled": true
-    }
-  ]
+		{
+			"Name": "SML",
+			"Enabled": true
+		}
+	]
 }
