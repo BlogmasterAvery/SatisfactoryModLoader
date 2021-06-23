@@ -1,8 +1,8 @@
 {
 	"FileVersion": 3,
-	"Version": 2,
-	"SemVersion": "2.1.1",
-	"FriendlyName": "avMallLib",
+	"Version": 1,
+	"SemVersion": "1.0.1",
+	"FriendlyName": "HotswapEquipment",
 	"Description": "",
 	"Category": "Other",
 	"CreatedBy": "Avery",
@@ -18,6 +18,11 @@
 		{
 			"Name": "SML",
 			"SemVersion": "^3.0.0",
+			"Enabled": true
+		},
+		{
+			"Name": "avMallLib",
+			"SemVersion": "^2.1.1",
 			"Enabled": true
 		}
 	]
