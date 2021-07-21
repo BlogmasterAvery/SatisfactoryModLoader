@@ -122,4 +122,6 @@ private:
 	/** Arrow to indicate the direction of the lift while placing it. */
 	UPROPERTY()
 	class UStaticMeshComponent* mArrowComponent;
+
+	friend class FUnlimitedLiftsModule;
 };

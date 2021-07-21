@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
-	"SemVersion": "2.0.1",
+	"VersionName": "2.0.2",
 	"FriendlyName": "Linear Motion",
 	"Description": "Get Moving!",
 	"Category": "Other",
