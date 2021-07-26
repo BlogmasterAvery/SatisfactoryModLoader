@@ -163,7 +163,7 @@ protected:
 	int32 mMagSize;
 
 	/** How much ammo is loaded into the weapon */
-	UPROPERTY( SaveGame, Replicated )
+	UPROPERTY( SaveGame, Replicated, BlueprintReadOnly )
 	int32 mCurrentAmmo;
 
 	/** The item we shoot */
