@@ -30,9 +30,32 @@ UFGItemDescriptor::FGenerateIconContext UFGItemDescriptor::GenerateIconContext =
 #endif 
 UFGItemDescriptor::UFGItemDescriptor() : Super() {
 	this->mUseDisplayNameAndDescription = true;
+	this->mDisplayName = INVTEXT("");
+	this->mDescription = INVTEXT("");
+	this->mAbbreviatedDisplayName = INVTEXT("");
 	this->mStackSize = EStackSize::SS_MEDIUM;
 	this->mCanBeDiscarded = true;
+	this->mRememberPickUp = false;
+	this->mEnergyValue = 0.0;
+	this->mRadioactiveDecay = 0.0;
 	this->mForm = EResourceForm::RF_SOLID;
+	this->mSmallIcon = nullptr;
+	this->mPersistentBigIcon = nullptr;
+	this->mConveyorMesh = nullptr;
+	this->mPreviewView.Distance = 200.0;
+	this->mPreviewView.FocalOffset.X = 0.0;
+	this->mPreviewView.FocalOffset.Y = 0.0;
+	this->mPreviewView.FocalOffset.Z = 0.0;
+	this->mPreviewView.CameraPitch = -35.0;
+	this->mCategory = nullptr;
+	this->mQuickSwitchGroup = nullptr;
+	this->mMenuPriority = 0.0;
+	this->mFluidColor = FColor(0, 0, 0, 0);
+	this->mGasColor = FColor(0, 0, 0, 0);
+	this->mResourceSinkPoints = 0;
+	this->mItemCategory = nullptr;
+	this->mBuildCategory = nullptr;
+	this->mBuildMenuPriority = 0.0;
 	this->mItemIndex = -1;
 }
 void UFGItemDescriptor::Serialize(FArchive& ar){ Super::Serialize(ar); }
@@ -115,12 +138,17 @@ bool UFGItemDescriptor::RememberPickUp(TSubclassOf< UFGItemDescriptor > inClass)
 	else
 		return bool();
 }
-TSubclassOf< UFGItemCategory > UFGItemDescriptor::GetItemCategory(TSubclassOf< UFGItemDescriptor > inClass) {
+TSubclassOf< class UFGItemCategory > UFGItemDescriptor::GetItemCategory(TSubclassOf< UFGItemDescriptor > inClass) {
 	if (inClass)
 		return inClass.GetDefaultObject()->mItemCategory;
 	else
 		return TSubclassOf< UFGItemCategory >();
 }
+TSubclassOf< class UFGCategory > UFGItemDescriptor::GetCategory(TSubclassOf< UFGItemDescriptor > inClass){ return TSubclassOf<class UFGCategory>(); }
+void UFGItemDescriptor::GetSubCategories(TSubclassOf< UFGItemDescriptor > inClass, TArray< TSubclassOf<  UFGCategory > >& out_subCategories){ }
+TArray< TSubclassOf< class UFGCategory > > UFGItemDescriptor::GetSubCategoriesOfClass(TSubclassOf< UFGItemDescriptor > inClass, TSubclassOf<  UFGCategory > outputCategoryClass){ return TArray<TSubclassOf<class UFGCategory> >(); }
+TSubclassOf< class UFGQuickSwitchGroup > UFGItemDescriptor::GetQuickSwitchGroup(TSubclassOf< UFGItemDescriptor > inClass){ return TSubclassOf<class UFGQuickSwitchGroup>(); }
+float UFGItemDescriptor::GetMenuPriority(TSubclassOf< UFGItemDescriptor > inClass){ return float(); }
 FColor UFGItemDescriptor::GetFluidColor(TSubclassOf< UFGItemDescriptor > inClass) {
 	if (inClass)
 		return inClass.GetDefaultObject()->mFluidColor;

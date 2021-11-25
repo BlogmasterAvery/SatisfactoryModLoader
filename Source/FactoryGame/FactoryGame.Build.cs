@@ -14,6 +14,8 @@ public class FactoryGame : ModuleRules
 		PublicDependencyModuleNames.AddRange(new[] {
 			"Core", "CoreUObject",
 			"Engine",
+			"DeveloperSettings",
+			"PhysicsCore",
 			"InputCore",
 			"OnlineSubsystem", "OnlineSubsystemNull", "OnlineSubsystemEOS", "OnlineSubsystemUtils",
 			"SignificanceManager",
@@ -28,7 +30,12 @@ public class FactoryGame : ModuleRules
 			"GameplayTasks",
 			"SlateCore", "Slate", "UMG",
 			"InstancedSplines",
-			"RenderCore"
+			"RenderCore",
+			"CinematicCamera",
+		});
+		
+		PublicDependencyModuleNames.AddRange(new[] {
+			"DummyHeaders",
 		});
         
 		PublicDefinitions.Add( "IS_PUBLIC_BUILD=1" ); 

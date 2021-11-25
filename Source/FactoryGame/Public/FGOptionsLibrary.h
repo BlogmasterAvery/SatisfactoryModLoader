@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FGOptionsSettings.h"
@@ -17,7 +18,6 @@ class FACTORYGAME_API UFGOptionsLibrary : public UBlueprintFunctionLibrary
 	
 public:
 	
-	UFUNCTION( BlueprintPure, Category="Options" )
 	static TArray<class UFGDynamicOptionsRow*> GetDynamicOptionsWidgets( UUserWidget* owningWidget, EOptionCategory category );
 
 	static void GetDynamicOptionData( TArray<FOptionRowData>& out_optionRowData );

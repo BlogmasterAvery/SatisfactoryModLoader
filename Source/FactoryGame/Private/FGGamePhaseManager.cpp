@@ -5,10 +5,13 @@
 AFGGamePhaseManager* AFGGamePhaseManager::Get(UWorld* world){ return nullptr; }
 AFGGamePhaseManager* AFGGamePhaseManager::Get(UObject* worldContext){ return nullptr; }
 AFGGamePhaseManager::AFGGamePhaseManager() : Super() {
-	this->bAlwaysRelevant = true;
-	this->SetReplicates(true);
+	this->mGamePhase = EGamePhase::EGP_EarlyGame;
 }
-void AFGGamePhaseManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{ }
+void AFGGamePhaseManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AFGGamePhaseManager, mGamePhase);
+	DOREPLIFETIME(AFGGamePhaseManager, mGamePhaseCosts);
+}
 void AFGGamePhaseManager::PreSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }
 void AFGGamePhaseManager::PostSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }
 void AFGGamePhaseManager::PreLoadGame_Implementation(int32 saveVersion, int32 gameVersion){ }
@@ -20,10 +23,12 @@ void AFGGamePhaseManager::SetGamePhase(EGamePhase newPhase){ }
 FText AFGGamePhaseManager::GetGamePhaseName(EGamePhase gamePhase) const{ return FText(); }
 EGamePhase AFGGamePhaseManager::GetGamePhaseForSchematic(TSubclassOf< UFGSchematic > inSchematic){ return EGamePhase(); }
 EGamePhase AFGGamePhaseManager::GetGamePhaseForTechTier(int32 techTier){ return EGamePhase(); }
+void AFGGamePhaseManager::GetTechTiersForGamePhase(EGamePhase gamePhase, TArray<int32>& out_techTiers) const{ }
 void AFGGamePhaseManager::GetBaseCostForGamePhase(EGamePhase gamePhase, TArray< FItemAmount >& out_cost){ }
 void AFGGamePhaseManager::GetCostForGamePhase(EGamePhase gamePhase, TArray< FItemAmount >& out_cost){ }
 int32 AFGGamePhaseManager::PayOffOnGamePhase(FItemAmount payOff, EGamePhase gamePhase){ return int32(); }
 void AFGGamePhaseManager::OnRep_GamePhase(){ }
+void AFGGamePhaseManager::OnRep_GamePhaseCosts(){ }
 void AFGGamePhaseManager::Debug_DumpStateToLog(){ }
 void AFGGamePhaseManager::ResetGamePhase(){ }
 int32 AFGGamePhaseManager::GetLastTechTierForGamePhase(EGamePhase phase) const{ return int32(); }

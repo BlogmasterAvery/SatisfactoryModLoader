@@ -2,7 +2,22 @@
 
 #include "Hologram/FGVehicleHologram.h"
 
-void AFGVehicleHologram::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const{ }
+AFGVehicleHologram::AFGVehicleHologram() : Super() {
+	this->mCustomizationData.SwatchDesc = nullptr;
+	this->mCustomizationData.PatternDesc = nullptr;
+	this->mCustomizationData.MaterialDesc = nullptr;
+	this->mCustomizationData.OverrideColorData.Metallic = 0.0;
+	this->mCustomizationData.OverrideColorData.Roughness = 0.0;
+	this->mCustomizationData.PatternRotation = 0;
+	this->mCustomizationData.ColorSlot = 0;
+	this->mCustomizationData.HasPower = 0;
+	this->mDefaultSwatch = nullptr;
+	this->mSoftClearanceOverlapResponse = EHologramSoftClearanceResponse::HSCR_Block;
+}
+void AFGVehicleHologram::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+}
 void AFGVehicleHologram::BeginPlay(){ }
 AActor* AFGVehicleHologram::Construct(TArray< AActor* >& out_children, FNetConstructionID netConstructionID){ return nullptr; }
 void AFGVehicleHologram::SetHologramLocationAndRotation(const FHitResult& hitResult){ }

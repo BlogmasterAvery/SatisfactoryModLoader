@@ -36,4 +36,8 @@ private:
 	TArray<TSharedRef<IPlugin>> FilteredMods;
 	FString LastFilter;
 	bool bShowEngine = false;
+
+	FReply PackageAllMods();
+	FReply CheckAllMods();
+	FReply UncheckAllMods();
 };

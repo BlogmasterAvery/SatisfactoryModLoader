@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "Buildables/FGBuildableFactoryBuilding.h"
 #include "FGBuildableFoundation.generated.h"
 
@@ -27,6 +28,10 @@ public:
 	/** Elevation of this foundation if ramp, assumes the ramp to go down towards a positive X. */
 	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Foundation" )
 	float mElevation;
+
+	/** Whether or not this is a frame piece. */
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Foundation" )
+	bool mIsFrame;
 
 	/** Disable snapping on specific sides. */
 	UPROPERTY( EditDefaultsOnly, Category = "Foundation" )

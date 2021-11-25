@@ -4,10 +4,21 @@
 #include "FGCheatManager.h"
 
 AFGPlayerControllerBase::AFGPlayerControllerBase() : Super() {
-	this->mAllowedInputWhenDead.Add(TEXT("SecondaryFire")); this->mAllowedInputWhenDead.Add(TEXT("PauseGame")); this->mAllowedInputWhenDead.Add(TEXT("Chat"));
+	this->mCurrentServer = nullptr;
+	this->mAdminInterface = nullptr;
+	this->mReplicatedCheatManager = nullptr;
+	this->mDisableInputComponent = nullptr;
+	this->mEnableInputComponent = nullptr;
+	this->mAllowedInputWhenDead.Add(TEXT("SecondaryFire"));
+	this->mAllowedInputWhenDead.Add(TEXT("PauseGame"));
+	this->mAllowedInputWhenDead.Add(TEXT("Chat"));
 	this->CheatClass = UFGCheatManager::StaticClass();
 }
-void AFGPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{ }
+void AFGPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AFGPlayerControllerBase, mAdminInterface);
+	DOREPLIFETIME(AFGPlayerControllerBase, mReplicatedCheatManager);
+}
 void AFGPlayerControllerBase::BeginPlay(){ }
 bool AFGPlayerControllerBase::ReplicateSubobjects( UActorChannel *Channel,  FOutBunch *Bunch, FReplicationFlags *RepFlags){ return bool(); }
 void AFGPlayerControllerBase::ClientRestart_Implementation(APawn* newPawn){ }
@@ -33,14 +44,17 @@ FString AFGPlayerControllerBase::GetPresenceString_Implementation() const{ retur
 void AFGPlayerControllerBase::Client_UpdateCappedBandwidth_Implementation(int32 cap){ }
 void AFGPlayerControllerBase::Server_UpdateCappedBandwidth_Implementation(int32 cap){ }
 bool AFGPlayerControllerBase::Server_UpdateCappedBandwidth_Validate(int32 cap){ return bool(); }
-void AFGPlayerControllerBase::AdminLogin(FString password){ }
-void AFGPlayerControllerBase::Server_AdminLogin_Implementation(const FString& hashedPassword){ }
-bool AFGPlayerControllerBase::Server_AdminLogin_Validate(const FString& hashedPassword){ return bool(); }
 void AFGPlayerControllerBase::OnAdminRightsGranted(){ }
 void AFGPlayerControllerBase::OnAdminRightsRevoked(){ }
 void AFGPlayerControllerBase::Admin(const FString& command){ }
 void AFGPlayerControllerBase::ServerAdmin_Implementation(const FString& command){ }
 bool AFGPlayerControllerBase::ServerAdmin_Validate(const FString& command){ return bool(); }
+bool AFGPlayerControllerBase::ProcessConsoleExec(const TCHAR* Cmd, FOutputDevice& Ar, UObject* Executor){ return bool(); }
+TScriptInterface<class IFGSaveManagerInterface> AFGPlayerControllerBase::GetMostRelevantSaveManager(){ return TScriptInterface<class IFGSaveManagerInterface>(); }
+TScriptInterface<class IFGSaveManagerInterface> AFGPlayerControllerBase::GetLocalSaveManager(){ return TScriptInterface<class IFGSaveManagerInterface>(); }
 void AFGPlayerControllerBase::DiscardInput(){ }
+void AFGPlayerControllerBase::SetPlayer(UPlayer* InPlayer){ }
+void AFGPlayerControllerBase::OnNetCleanup( UNetConnection* Connection){ }
 void AFGPlayerControllerBase::EnablePlayerInput(bool enable){ }
+void AFGPlayerControllerBase::SetCurrentServer( UFGServerObject* CurrentServer){ }
 void AFGPlayerControllerBase::InitDeathInput(){ }

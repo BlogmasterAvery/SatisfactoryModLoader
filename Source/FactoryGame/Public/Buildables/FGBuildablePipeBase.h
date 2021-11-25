@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "CoreMinimal.h"
 #include "Buildables/FGBuildable.h"
 #include "Components/SplineComponent.h"
@@ -30,6 +31,11 @@ public:
 	// Begin Buildable interface
 	virtual int32 GetDismantleRefundReturnsMultiplier() const override;
 	// End Buildable interface
+
+	// Begin IFGDismantleInterface
+	virtual void Upgrade_Implementation( AActor* newActor ) override;
+	virtual void Dismantle_Implementation() override;
+	// End IFGDismantleInterface
 
 	// Begin IFGSignificance Interface
 	virtual void GainedSignificance_Implementation() override;
@@ -60,6 +66,12 @@ public:
 	/* Helpers for finding locations on the pathing spline */
 	virtual float FindOffsetClosestToLocation( const FVector& location ) const;
 	virtual void GetLocationAndDirectionAtOffset( float offset, FVector& out_location, FVector& out_direction ) const;
+	
+	/** Get the spline data for this pipe. */
+	UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "Pipe" )
+    FORCEINLINE TArray< FSplinePointData > GetSplineData() const { return mSplineData; };
+
+	FORCEINLINE TArray< class AFGBuildablePassthrough* > GetSnappedPassthroughs() { return mSnappedPassthroughs; }
 
 protected:
 	/**
@@ -67,14 +79,14 @@ protected:
 	 * [DavalliusA:Tue/22-10-2019] this is med with a function, so we don't have to store a variable in all the instances of this class
 	 */
 	UFUNCTION( BlueprintNativeEvent, Category = "FactoryGame|Pipes|PipeBase" )
-	TSubclassOf< UFGPipeConnectionComponentBase > GetConnectionType();
+	TSubclassOf< class UFGPipeConnectionComponentBase > GetConnectionType();
 
 public:
 	/** Default height above ground level for pipes */
 	static constexpr float DEFAULT_PIPE_HEIGHT = 175.f;
 
 	const static float PIPE_COST_LENGTH_MULTIPLIER;
-public: // MODDING EDIT protected -> public
+protected:
 	/** Mesh to use for his conveyor. */
 	UPROPERTY( EditDefaultsOnly, Category = "Pipes" )
 	class UStaticMesh* mMesh;
@@ -91,14 +103,12 @@ public: // MODDING EDIT protected -> public
 
 	/**
 	 * First connection on the pipe (can be an input and an output, because, again, pipes)
-	 * MUST BE SET FROM CONSTRUCTION SCRIPT OR IT WILL BE NULL!
 	 */
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Pipes" )
 	UFGPipeConnectionComponentBase* mConnection0;
 
 	/**
 	 * Second connection on the pipe (can be an input and an output, because, again, pipes)
-	 * MUST BE SET FROM CONSTRUCTION SCRIPT OR IT WILL BE NULL!
 	 */
 	UPROPERTY( VisibleAnywhere, BlueprintReadWrite, Category = "Pipes" )
 	UFGPipeConnectionComponentBase* mConnection1;
@@ -114,6 +124,10 @@ public: // MODDING EDIT protected -> public
 	/** The spline meshes for this train track. */
 	UPROPERTY( VisibleAnywhere, Category = "Spline" )
 	class UFGInstancedSplineMeshComponent* mInstancedSplineComponent;
+
+	/** Saved passthroughs this pipeline is connected to. Used to notify passthrough when dismantled. */
+	UPROPERTY( SaveGame, Replicated )
+	TArray< class AFGBuildablePassthrough* > mSnappedPassthroughs;
 
 private:
 	friend class AFGPipelineHologram;

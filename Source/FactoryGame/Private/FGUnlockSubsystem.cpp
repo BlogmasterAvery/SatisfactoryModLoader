@@ -3,12 +3,26 @@
 #include "FGUnlockSubsystem.h"
 
 AFGUnlockSubsystem::AFGUnlockSubsystem() : Super() {
+	this->mMapUnlockedMessage = nullptr;
+	this->mInventorySlotUnlockedMessage = nullptr;
+	this->mBuildingEfficiencyUnlockedMessage = nullptr;
+	this->mBuildingOverclockUnlockedMessage = nullptr;
+	this->mArmEquipmentSlotUnlockedMessage = nullptr;
+	this->mIsMapUnlocked = false;
+	this->mIsBuildingEfficiencyUnlocked = false;
+	this->mIsBuildingOverclockUnlocked = false;
 	this->mNumTotalInventorySlots = 18;
 	this->mNumTotalArmEquipmentSlots = 1;
-	this->bAlwaysRelevant = true;
-	this->SetReplicates(true);
 }
-void AFGUnlockSubsystem::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const{ }
+void AFGUnlockSubsystem::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AFGUnlockSubsystem, mScannableResourcesPairs);
+	DOREPLIFETIME(AFGUnlockSubsystem, mIsMapUnlocked);
+	DOREPLIFETIME(AFGUnlockSubsystem, mIsBuildingEfficiencyUnlocked);
+	DOREPLIFETIME(AFGUnlockSubsystem, mIsBuildingOverclockUnlocked);
+	DOREPLIFETIME(AFGUnlockSubsystem, mNumTotalInventorySlots);
+	DOREPLIFETIME(AFGUnlockSubsystem, mNumTotalArmEquipmentSlots);
+}
 void AFGUnlockSubsystem::PostLoadGame_Implementation(int32 saveVersion, int32 gameVersion){ }
 AFGUnlockSubsystem* AFGUnlockSubsystem::Get(UWorld* world){ return nullptr; }
 AFGUnlockSubsystem* AFGUnlockSubsystem::Get(UObject* worldContext){ return nullptr; }

@@ -5,11 +5,21 @@
 AFGMapManager* AFGMapManager::Get(UWorld* world){ return nullptr; }
 AFGMapManager* AFGMapManager::Get(UObject* worldContext){ return nullptr; }
 AFGMapManager::AFGMapManager() : Super() {
-	this->PrimaryActorTick.TickGroup = TG_DuringPhysics; this->PrimaryActorTick.EndTickGroup = TG_PrePhysics; this->PrimaryActorTick.bTickEvenWhenPaused = false; this->PrimaryActorTick.bCanEverTick = true; this->PrimaryActorTick.bStartWithTickEnabled = true; this->PrimaryActorTick.bAllowTickOnDedicatedServer = true; this->PrimaryActorTick.TickInterval = 0.100000001490116;
-	this->bAlwaysRelevant = true;
-	this->SetReplicates(true);
+	this->mFogOfWarTexture = nullptr;
+	this->mCachedMinimapCaptureActor = nullptr;
+	this->mActorRepresentationManager = nullptr;
+	this->PrimaryActorTick.TickGroup = ETickingGroup::TG_DuringPhysics;
+	this->PrimaryActorTick.EndTickGroup = ETickingGroup::TG_PrePhysics;
+	this->PrimaryActorTick.bTickEvenWhenPaused = false;
+	this->PrimaryActorTick.bCanEverTick = true;
+	this->PrimaryActorTick.bStartWithTickEnabled = true;
+	this->PrimaryActorTick.bAllowTickOnDedicatedServer = true;
+	this->PrimaryActorTick.TickInterval = 0.1;
 }
-void AFGMapManager::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const{ }
+void AFGMapManager::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+}
 void AFGMapManager::BeginPlay(){ }
 void AFGMapManager::Tick(float dt){ }
 void AFGMapManager::PreSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }
@@ -22,6 +32,8 @@ bool AFGMapManager::ShouldSave_Implementation() const{ return bool(); }
 void AFGMapManager::RequestFogOfWarData( AFGPlayerController* playerController){ }
 void AFGMapManager::TransferFogOfWarData(){ }
 void AFGMapManager::SyncFogOfWarChanges(const TArray<uint8>& fogOfWarRawData, int32 finalIndex){ }
+void AFGMapManager::RevealMap(){ }
+void AFGMapManager::HideMap(){ }
 void AFGMapManager::SetupFogOfWarTexture(){ }
 void AFGMapManager::InitialFogOfWarRequest(){ }
 void AFGMapManager::SetupRepresentationManager(){ }

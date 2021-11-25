@@ -2,8 +2,15 @@
 
 #include "Equipment/FGBuildGunDismantle.h"
 
-UFGBuildGunStateDismantle::UFGBuildGunStateDismantle(){ }
-void UFGBuildGunStateDismantle::GetLifetimeReplicatedProps(TArray<  FLifetimeProperty > & OutLifetimeProps) const{ }
+UFGBuildGunStateDismantle::UFGBuildGunStateDismantle() : Super() {
+	this->mHoverProxyMaterial = nullptr;
+	this->mMultiDismantleSpecifiedType = nullptr;
+	this->mCurrentlySelectedActor = nullptr;
+}
+void UFGBuildGunStateDismantle::GetLifetimeReplicatedProps(TArray<  FLifetimeProperty > & OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UFGBuildGunStateDismantle, mPeekDismantleRefund);
+}
 void UFGBuildGunStateDismantle::BeginState_Implementation(){ }
 void UFGBuildGunStateDismantle::EndState_Implementation(){ }
 void UFGBuildGunStateDismantle::TickState_Implementation(float deltaTime){ }
@@ -18,6 +25,8 @@ bool UFGBuildGunStateDismantle::CanBeginBuildGunDelay() const{ return bool(); }
 void UFGBuildGunStateDismantle::BeginBuildGunDelay(){ }
 void UFGBuildGunStateDismantle::ResetBuildGunDelay(){ }
 void UFGBuildGunStateDismantle::Internal_OnMultiDismantleStateChanged(bool newValue){ }
+void UFGBuildGunStateDismantle::Internal_OnSingleTypeMultiDismantleChanged(bool newValue){ }
+void UFGBuildGunStateDismantle::UpdateHighlightedActors(){ }
 void UFGBuildGunStateDismantle::Server_DismantleActors_Implementation(const TArray<class AActor*>& selectedActors){ }
 bool UFGBuildGunStateDismantle::Server_DismantleActors_Validate(const TArray<class AActor*>& selectedActors){ return bool(); }
 void UFGBuildGunStateDismantle::Server_PeekAtDismantleRefund_Implementation(const TArray<class AActor*>& selectedActors){ }
@@ -33,4 +42,4 @@ void UFGBuildGunStateDismantle::ClearStaleDismantleActors(){ }
 void UFGBuildGunStateDismantle::CreateStencilProxy(AActor* selected){ }
 void UFGBuildGunStateDismantle::DestroySingleStencilProxy(AActor* actor){ }
 void UFGBuildGunStateDismantle::DestroyStencilProxies(bool destroyComponents){ }
-void UFGBuildGunStateDismantle::ResetStencilValues(TArray<AActor*> selectedActors){ }
+void UFGBuildGunStateDismantle::ResetStencilValues(AActor* actor){ }

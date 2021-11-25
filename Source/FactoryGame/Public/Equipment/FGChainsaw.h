@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "Equipment/FGEquipment.h"
 #include "FGInventoryComponent.h"
 #include "FGChainsaw.generated.h"
@@ -45,6 +46,7 @@ public:
 
 	// Begin AFGEquipment interface
 	virtual bool ShouldSaveState() const override;
+	virtual void DisableEquipment() override;
 	virtual void UnEquip() override;
 	// End
 

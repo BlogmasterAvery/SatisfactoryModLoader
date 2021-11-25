@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "Equipment/FGEquipment.h"
 #include "Equipment/FGEquipmentAttachment.h"
 #include "Camera/CameraShake.h"
@@ -9,7 +10,7 @@
 
 
 UCLASS()
-class FACTORYGAME_API UFGParachuteCameraShake : public UCameraShake
+class FACTORYGAME_API UFGParachuteCameraShake : public UMatineeCameraShake
 {
 	GENERATED_BODY()
 	public:
@@ -20,7 +21,7 @@ class FACTORYGAME_API UFGParachuteCameraShake : public UCameraShake
  * 
  */
 UCLASS()
-class FACTORYGAME_API AFGParachute : public AFGEquipment
+class FACTORYGAME_API AFGParachute : public AFGEquipment 
 {
 	GENERATED_BODY()
 public:

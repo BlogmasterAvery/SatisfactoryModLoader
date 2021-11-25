@@ -3,10 +3,12 @@
 #include "FGSporeFlower.h"
 
 AFGSporeFlower::AFGSporeFlower() : Super() {
-	this->SetReplicates(true);
-	this->NetDormancy = DORM_Initial;
+
 }
-void AFGSporeFlower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{ }
+void AFGSporeFlower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+}
 void AFGSporeFlower::BeginPlay(){ }
 void AFGSporeFlower::GainedSignificance_Implementation(){ }
 void AFGSporeFlower::LostSignificance_Implementation(){ }

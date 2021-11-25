@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "Resources/FGItemDescriptor.h"
 #include "FGItemDescriptorNuclearFuel.generated.h"
 
@@ -25,7 +26,7 @@ public:
 
 private:
 	/** The descriptor to use when the fuel is removed from the reactor (waste). */
-	UPROPERTY( EditDefaultsOnly, Category = "Nuclear Fuel" )
+	UPROPERTY( EditDefaultsOnly, Category = "Nuclear Fuel", meta = ( AddAutoJSON = true ) )
 	TSubclassOf< UFGItemDescriptor > mSpentFuelClass;
 
 	/** How much waste to produce */

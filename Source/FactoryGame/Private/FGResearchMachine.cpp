@@ -3,11 +3,27 @@
 #include "FGResearchMachine.h"
 
 UFGResearchMachine::UFGResearchMachine() : Super() {
-	this->PrimaryComponentTick.TickGroup = TG_DuringPhysics; this->PrimaryComponentTick.EndTickGroup = TG_PrePhysics; this->PrimaryComponentTick.bTickEvenWhenPaused = false; this->PrimaryComponentTick.bCanEverTick = true; this->PrimaryComponentTick.bStartWithTickEnabled = true; this->PrimaryComponentTick.bAllowTickOnDedicatedServer = true; this->PrimaryComponentTick.TickInterval = 0;
+	this->mCurrentResearchRecipe = nullptr;
+	this->mPlayerUsingMachine = nullptr;
+	this->mResearchingMeshComponent = nullptr;
+	this->mResearchingMesh = nullptr;
+	this->mItemScaleCurve = nullptr;
+	this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_DuringPhysics;
+	this->PrimaryComponentTick.EndTickGroup = ETickingGroup::TG_PrePhysics;
+	this->PrimaryComponentTick.bTickEvenWhenPaused = false;
+	this->PrimaryComponentTick.bCanEverTick = true;
+	this->PrimaryComponentTick.bStartWithTickEnabled = true;
+	this->PrimaryComponentTick.bAllowTickOnDedicatedServer = true;
+	this->PrimaryComponentTick.TickInterval = 0.0;
 	this->SetIsReplicatedByDefault(true);
 	this->bAutoActivate = true;
 }
-void UFGResearchMachine::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{ }
+void UFGResearchMachine::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UFGResearchMachine, mCurrentResearchRecipe);
+	DOREPLIFETIME(UFGResearchMachine, mPlayerUsingMachine);
+	DOREPLIFETIME(UFGResearchMachine, mResearchingMesh);
+}
 void UFGResearchMachine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction){ }
 void UFGResearchMachine::SetResearchRecipe(TSubclassOf<class UFGResearchRecipe> researchRecipe){ }
 UStaticMeshComponent* UFGResearchMachine::GetResearchMeshComponent(){ return nullptr; }

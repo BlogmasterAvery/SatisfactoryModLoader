@@ -4,8 +4,20 @@
 
 AFGDriveablePawn::AFGDriveablePawn() : Super() {
 	this->mShouldAttachDriver = true;
+	this->mIsDriverVisible = false;
+	this->mDriverSeatSocket = TEXT("None");
+	this->mDriverSeatAnimation = nullptr;
+	this->mDriverExitOffset.X = 0.0;
+	this->mDriverExitOffset.Y = 0.0;
+	this->mDriverExitOffset.Z = 0.0;
+	this->mDriver = nullptr;
+	this->mIsDriving = false;
 }
-void AFGDriveablePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{ }
+void AFGDriveablePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AFGDriveablePawn, mDriver);
+	DOREPLIFETIME(AFGDriveablePawn, mIsDriving);
+}
 void AFGDriveablePawn::PreSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }
 void AFGDriveablePawn::PostSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }
 void AFGDriveablePawn::PreLoadGame_Implementation(int32 saveVersion, int32 gameVersion){ }

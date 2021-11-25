@@ -6,12 +6,53 @@ FHotbar::FHotbar( AFGPlayerState* owningState, const FHotbar& hotbar){ }
 FHotbar::FHotbar(TArray<  UFGHotbarShortcut* > hotbarShortcuts){ }
 FPresetHotbar::FPresetHotbar( AFGPlayerState* owningState, const FPresetHotbar& presetHotbar){ }
 AFGPlayerState::AFGPlayerState() : Super() {
+	this->mCurrentHotbarIndex = 0;
 	this->mSlotNum = -1;
+	this->mSlotData.PingColor = FLinearColor(0.0, 0.0, 0.0, 0.0);
+	this->mSlotData.NametagColor = FLinearColor(0.0, 0.0, 0.0, 0.0);
+	this->mOwnedPawn = nullptr;
+	this->mHasReceivedInitialItems = false;
+	this->mIsServerAdmin = false;
+	this->mCustomColorData.Metallic = 0.0;
+	this->mCustomColorData.Roughness = 0.0;
+	this->mTutorialSubsystem = nullptr;
+	this->mTutorialSubsystemClass = nullptr;
 	this->mNumArmSlots = 1;
-	this->NetUpdateFrequency = 10;
+	this->mOnlyShowAffordableRecipes = false;
+	this->mLastSelectedResourceSinkShopCategory = nullptr;
+	this->mNumObservedInventorySlots = 0;
+	this->PrimaryActorTick.TickGroup = ETickingGroup::TG_PrePhysics;
+	this->PrimaryActorTick.EndTickGroup = ETickingGroup::TG_PrePhysics;
+	this->PrimaryActorTick.bTickEvenWhenPaused = false;
+	this->PrimaryActorTick.bCanEverTick = false;
+	this->PrimaryActorTick.bStartWithTickEnabled = false;
+	this->PrimaryActorTick.bAllowTickOnDedicatedServer = true;
+	this->PrimaryActorTick.TickInterval = 0.0;
+	this->NetUpdateFrequency = 10.0;
 }
 void AFGPlayerState::Serialize(FArchive& ar){ Super::Serialize(ar); }
-void AFGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{ }
+void AFGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AFGPlayerState, mHotbars);
+	DOREPLIFETIME(AFGPlayerState, mPresetHotbars);
+	DOREPLIFETIME(AFGPlayerState, mCurrentHotbarIndex);
+	DOREPLIFETIME(AFGPlayerState, mBuildableSubCategoryDefaultMatDesc);
+	DOREPLIFETIME(AFGPlayerState, mMaterialSubCategoryDefaultMatDesc);
+	DOREPLIFETIME(AFGPlayerState, mNewRecipes);
+	DOREPLIFETIME(AFGPlayerState, mSlotNum);
+	DOREPLIFETIME(AFGPlayerState, mSlotData);
+	DOREPLIFETIME(AFGPlayerState, mIsServerAdmin);
+	DOREPLIFETIME(AFGPlayerState, mVisitedAreas);
+	DOREPLIFETIME(AFGPlayerState, mCustomColorData);
+	DOREPLIFETIME(AFGPlayerState, mRememberedFirstTimeEquipmentClasses);
+	DOREPLIFETIME(AFGPlayerState, mNumArmSlots);
+	DOREPLIFETIME(AFGPlayerState, mOnlyShowAffordableRecipes);
+	DOREPLIFETIME(AFGPlayerState, mCollapsedItemCategories);
+	DOREPLIFETIME(AFGPlayerState, mFilteredOutMapTypes);
+	DOREPLIFETIME(AFGPlayerState, mFilteredOutCompassTypes);
+	DOREPLIFETIME(AFGPlayerState, mNumObservedInventorySlots);
+	DOREPLIFETIME(AFGPlayerState, mFavoriteShopSchematics);
+}
 bool AFGPlayerState::ReplicateSubobjects( UActorChannel* channel,  FOutBunch* bunch, FReplicationFlags* repFlags){ return bool(); }
 void AFGPlayerState::BeginPlay(){ }
 void AFGPlayerState::CopyProperties(APlayerState* playerState){ }
@@ -46,7 +87,8 @@ void AFGPlayerState::ChangeNameOfPresetHotbar(int32 presetHotbarIndex, const FTe
 void AFGPlayerState::ChangeIconIndexOfPresetHotbar(int32 presetHotbarIndex, int32 iconIndex){ }
 bool AFGPlayerState::RemovePresetHotbar(int32 presetHotbarIndex){ return bool(); }
 bool AFGPlayerState::CopyPresetHotbarToCurrentHotbar(int32 presetHotbarIndex){ return bool(); }
-void AFGPlayerState::SetRecipeShortcutOnIndex(TSubclassOf<  UFGRecipe > recipe, int32 onIndex){ }
+void AFGPlayerState::SetRecipeShortcutOnIndex(TSubclassOf<  UFGRecipe > recipe, int32 onIndex, int32 onHotbarIndex){ }
+void AFGPlayerState::SetCustomizationShortcutOnIndex(TSubclassOf<  UFGCustomizationRecipe > customizationRecipe, int32 onIndex){ }
 bool AFGPlayerState::GetAndSetFirstTimeEquipped( AFGEquipment* equipment){ return bool(); }
 AFGPlayerController* AFGPlayerState::GetOwningController() const{ return nullptr; }
 void AFGPlayerState::AddNewRecipe(TSubclassOf< UFGRecipe > recipe){ }
@@ -75,6 +117,15 @@ TArray<TSubclassOf<class UFGSchematic>> AFGPlayerState::GetShopFavorites() const
 void AFGPlayerState::SaveAsShopFavorite(TSubclassOf<class UFGSchematic> schematic){ }
 void AFGPlayerState::RemoveAsShopFavorite(TSubclassOf<class UFGSchematic> schematic){ }
 void AFGPlayerState::RemoveAllShopFavorites(){ }
+void AFGPlayerState::SetPlayerCustomizationSlotData(FFactoryCustomizationColorSlot customColorData){ }
+void AFGPlayerState::Server_SetPlayerCustomizationSlotData_Implementation(FFactoryCustomizationColorSlot customColorData){ }
+TSubclassOf< class UFGFactoryCustomizationDescriptor_Material > AFGPlayerState::GetSavedMatDescForBuildableCategory(TSubclassOf<  UFGCategory > category, TSubclassOf<  UFGCategory > subCategory){ return TSubclassOf<class UFGFactoryCustomizationDescriptor_Material>(); }
+void AFGPlayerState::SetSavedMatDescForBuildableCategory(TSubclassOf<  UFGCategory > category, TSubclassOf< UFGFactoryCustomizationDescriptor_Material > materialDesc, bool skipRep){ }
+void AFGPlayerState::Server_SetSavedMatDescForBuildableCategory_Implementation(TSubclassOf<  UFGCategory > category, TSubclassOf< UFGFactoryCustomizationDescriptor_Material > materialDesc){ }
+TSubclassOf< class UFGFactoryCustomizationDescriptor_Material > AFGPlayerState::GetSavedMatDescForMaterialCategory(TSubclassOf<  UFGCategory > category){ return TSubclassOf<class UFGFactoryCustomizationDescriptor_Material>(); }
+void AFGPlayerState::SetSavedMatDescForMaterialCategory(TSubclassOf<  UFGCategory > category, TSubclassOf< UFGFactoryCustomizationDescriptor_Material > materialDesc, bool updateHotbarShortcuts){ }
+void AFGPlayerState::Server_SetSavedMatDescForMaterialCategory_Implementation(TSubclassOf<  UFGCategory > category, TSubclassOf< UFGFactoryCustomizationDescriptor_Material > materialDesc){ }
+void AFGPlayerState::UpdateHotbarShortcutsForMaterialDesc(TSubclassOf<  UFGFactoryCustomizationDescriptor_Material > newDefaultMaterialDesc){ }
 void AFGPlayerState::OnRep_HotbarShortcuts(){ }
 void AFGPlayerState::OnRep_CurrentHotbarIndex(){ }
 void AFGPlayerState::Server_UpdateNumObservedInventorySlots_Implementation(){ }

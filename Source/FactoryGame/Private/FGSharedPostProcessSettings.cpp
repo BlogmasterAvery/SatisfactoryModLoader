@@ -3,6 +3,7 @@
 #include "FGSharedPostProcessSettings.h"
 
 UFGSharedPostProcessSettings::UFGSharedPostProcessSettings() : Super() {
-	this->mBlendWeight = 1;
-	this->mPriority = 1.10000002384186;
+	this->mBlendRadius = 0.0;
+	this->mBlendWeight = 1.0;
+	this->mPriority = 1.1;
 }

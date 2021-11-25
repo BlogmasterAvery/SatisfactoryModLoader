@@ -10,7 +10,6 @@ void UFGConsoleCommandManager::SaveWithNewSessionName(const FString& saveName, c
 void UFGConsoleCommandManager::TrackAllAkStats(){ }
 void UFGConsoleCommandManager::TrackAkComponents(bool byClass){ }
 void UFGConsoleCommandManager::TrackAkComponentsWithNoPositionOrOwner(){ }
-void UFGConsoleCommandManager::DumpFactoryMaterialInstanceManagerStats(){ }
 void UFGConsoleCommandManager::CrashTheGame(){ }
 void UFGConsoleCommandManager::DumpCrashContext(){ }
 void UFGConsoleCommandManager::FixupBuiltByRecipeInOldSave(bool reapplyRecipeIfBetterMatchFound){ }
@@ -18,3 +17,4 @@ void UFGConsoleCommandManager::DumpFactoryStatsToLog(){ }
 void UFGConsoleCommandManager::CopyPlayerCoordinates(){ }
 void UFGConsoleCommandManager::DumpPlayerCoordinates(const FString& label , bool copyToClipboard){ }
 void UFGConsoleCommandManager::DumpDynamicOptionsSettings(){ }
+void UFGConsoleCommandManager::ToggleRailroadBlockVisualization(bool enabled){ }

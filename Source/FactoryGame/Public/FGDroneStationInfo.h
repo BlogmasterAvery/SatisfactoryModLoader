@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "GameFramework/Info.h"
 #include "FGSaveInterface.h"
 #include "FGBuildingTagInterface.h"
@@ -165,6 +166,9 @@ public:
 	/** @returns all the stations connected to this one. */
 	UFUNCTION( BlueprintPure, Category = "Drone Station|Info" )
     TArray< AFGDroneStationInfo* > GetConnectedStations() const { return mConnectedStations; }
+
+	UFUNCTION( BlueprintPure, Category = "Drone Station|Info" )
+	const FVector& GetStationLocation() const { return mStationLocation; }
 
 	UFUNCTION( BlueprintCallable, Category = "Drone Station|Info" )
     void PairStation( AFGDroneStationInfo* otherStation );

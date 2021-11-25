@@ -2,10 +2,28 @@
 
 #include "FGPowerInfoComponent.h"
 
-void UFGPowerInfoComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const{ }
+void UFGPowerInfoComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UFGPowerInfoComponent, mCircuitID);
+	DOREPLIFETIME(UFGPowerInfoComponent, mTargetConsumption);
+	DOREPLIFETIME(UFGPowerInfoComponent, mActualConsumption);
+	DOREPLIFETIME(UFGPowerInfoComponent, mBaseProduction);
+	DOREPLIFETIME(UFGPowerInfoComponent, mDynamicProductionCapacity);
+	DOREPLIFETIME(UFGPowerInfoComponent, mDynamicProductionDemandFactor);
+	DOREPLIFETIME(UFGPowerInfoComponent, mIsFuseTriggered);
+	DOREPLIFETIME(UFGPowerInfoComponent, mIsFullBlast);
+}
 void UFGPowerInfoComponent::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker){ }
 UFGPowerInfoComponent::UFGPowerInfoComponent() : Super() {
 	this->mCircuitID = -1;
+	this->mTargetConsumption = 0.0;
+	this->mActualConsumption = 0.0;
+	this->mBaseProduction = 0.0;
+	this->mDynamicProductionCapacity = 0.0;
+	this->mDynamicProductionDemandFactor = 0.0;
+	this->mBatteryInfo = nullptr;
+	this->mIsFuseTriggered = false;
+	this->mIsFullBlast = false;
 	this->SetIsReplicatedByDefault(true);
 }
 void UFGPowerInfoComponent::PreSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }

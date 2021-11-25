@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "FactoryGame.h"
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "FGConsoleCommandManager.generated.h"
@@ -40,9 +41,6 @@ public:
 	/** Dumps all ak components with no position (0,0,0) or owner to the log. */
 	UFUNCTION( exec )
 	void TrackAkComponentsWithNoPositionOrOwner();
-	/** Dumps all FGFactoryMaterialInstanceManager stats for debugging */
-	UFUNCTION( exec )
-	void DumpFactoryMaterialInstanceManagerStats();
 
 	/** Useful for testing the crash reporter. */
 	UFUNCTION( exec )
@@ -74,4 +72,8 @@ public:
 
 	UFUNCTION( exec )
 	void DumpDynamicOptionsSettings();
+
+	/** Toggle visualization of railroad blocks on/off. */
+	UFUNCTION( exec )
+	void ToggleRailroadBlockVisualization( bool enabled );
 };

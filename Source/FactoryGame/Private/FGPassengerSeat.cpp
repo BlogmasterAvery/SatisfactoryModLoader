@@ -2,8 +2,11 @@
 
 #include "FGPassengerSeat.h"
 
-void AFGPassengerSeat::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const{ }
+void AFGPassengerSeat::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AFGPassengerSeat, mOuterVehicle);
+}
 AFGPassengerSeat::AFGPassengerSeat() : Super() {
-	this->mShouldAttachDriver = true;
+	this->mOuterVehicle = nullptr;
 }
 void AFGPassengerSeat::Tick(float dt){ }
