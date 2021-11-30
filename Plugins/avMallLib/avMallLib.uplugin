@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
-	"SemVersion": "2.1.1",
+	"SemVersion": "2.2.1",
 	"FriendlyName": "avMallLib",
 	"Description": "",
 	"Category": "Other",
@@ -17,7 +17,7 @@
 	"Plugins": [
 		{
 			"Name": "SML",
-			"SemVersion": "^3.0.0",
+			"SemVersion": "^3.2.0",
 			"Enabled": true
 		}
 	]

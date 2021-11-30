@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
-	"SemVersion": "2.1.1",
+	"SemVersion": "2.2.2",
 	"FriendlyName": "SmallStorage",
 	"Description": "",
 	"Category": "Other",
@@ -17,13 +17,13 @@
 	"Plugins": [
 		{
 			"Name": "SML",
-			"SemVersion": "^3.0.0",
+			"SemVersion": "^3.2.0",
 			"bIsOptional": false,
 			"Enabled": true
 		},
 		{
 			"Name": "avMallLib",
-			"SemVersion": "^2.0.0",
+			"SemVersion": "^2.2.0",
 			"bIsOptional": false,
 			"Enabled": true
 		}

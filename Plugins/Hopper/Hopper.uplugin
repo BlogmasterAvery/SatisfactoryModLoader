@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 3,
-	"SemVersion": "3.2.1",
+	"SemVersion": "3.3.2",
 	"FriendlyName": "Hopper",
 	"Description": "",
 	"Category": "Other",
@@ -17,12 +17,12 @@
 	"Plugins": [
 		{
 			"Name": "SML",
-			"SemVersion": "^3.0.0",
+			"SemVersion": "^3.2.0",
 			"Enabled": true
 		},
 		{
 			"Name": "avMallLib",
-			"SemVersion": "^2.0.1",
+			"SemVersion": "^2.2.0",
 			"Enabled": true
 		}
 	]

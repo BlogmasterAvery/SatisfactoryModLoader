@@ -26,7 +26,7 @@ void FUnlimitedLiftsModule::hookFGConveyorLiftHologram(AFGConveyorLiftHologram* 
 
 	//UE_LOG(LogUnlimitedLifts, Warning, TEXT("Conveyor lift min and max height are %f, %f"), FGConveyorLiftHologram->mMinimumHeight, FGConveyorLiftHologram->mMaximumHeight);
 
-	FGConveyorLiftHologram->mMaximumHeight = FMath::Max(FGConveyorLiftHologram->mMinimumHeight, GWM->configConveyorLiftMaxHeight);
+//	FGConveyorLiftHologram->mMaximumHeight = FMath::Max(FGConveyorLiftHologram->mMinimumHeight, GWM->configConveyorLiftMaxHeight);
 
 	//UE_LOG(LogUnlimitedLifts, Warning, TEXT("Conveyor lift max height is now %f"), FGConveyorLiftHologram->mMaximumHeight);
 }
