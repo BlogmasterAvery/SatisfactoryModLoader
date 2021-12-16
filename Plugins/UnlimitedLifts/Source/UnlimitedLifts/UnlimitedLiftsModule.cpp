@@ -24,11 +24,11 @@ void FUnlimitedLiftsModule::hookFGConveyorLiftHologram(AFGConveyorLiftHologram* 
 {
 	resolveGWM();//if (!IsValid(GWM)) resolveGWM();
 
-	//UE_LOG(LogUnlimitedLifts, Warning, TEXT("Conveyor lift min and max height are %f, %f"), FGConveyorLiftHologram->mMinimumHeight, FGConveyorLiftHologram->mMaximumHeight);
+	UE_LOG(LogUnlimitedLifts, Warning, TEXT("Conveyor lift min and max height are %f, %f"), FGConveyorLiftHologram->mMinimumHeight, FGConveyorLiftHologram->mMaximumHeight);
 
-//	FGConveyorLiftHologram->mMaximumHeight = FMath::Max(FGConveyorLiftHologram->mMinimumHeight, GWM->configConveyorLiftMaxHeight);
+	FGConveyorLiftHologram->mMaximumHeight = FMath::Max(FGConveyorLiftHologram->mMinimumHeight, GWM->configConveyorLiftMaxHeight);
 
-	//UE_LOG(LogUnlimitedLifts, Warning, TEXT("Conveyor lift max height is now %f"), FGConveyorLiftHologram->mMaximumHeight);
+	UE_LOG(LogUnlimitedLifts, Warning, TEXT("Conveyor lift max height is now %f"), FGConveyorLiftHologram->mMaximumHeight);
 }
 
 //bool FUnlimitedLiftsModule::hookCanConnectToConnection(const AFGConveyorLiftHologram* FGConveyorLiftHologram, UFGFactoryConnectionComponent* from, UFGFactoryConnectionComponent* to) const

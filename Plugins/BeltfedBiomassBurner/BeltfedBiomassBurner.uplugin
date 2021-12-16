@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"SemVersion": "1.0.1",
+	"SemVersion": "1.1.1",
 	"FriendlyName": "BeltfedBiomassBurner",
 	"Description": "Adds a biomass burner with a belt input",
 	"Category": "Other",
@@ -17,7 +17,7 @@
 	"Plugins": [
 		{
 			"Name": "SML",
-			"SemVersion": "^3.1.0",
+			"SemVersion": "^3.2.0",
 			"bIsOptional": false,
 			"Enabled": true
 		}
