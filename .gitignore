@@ -84,3 +84,5 @@ Configs/*
 !Plugins/ExampleMod/
 
 Plugins/LinearMotion/*
+
+#Content/FactoryGame/*
