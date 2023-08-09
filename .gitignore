@@ -86,4 +86,4 @@ Plugins/AssetGenerator/*
 Plugins/AssetDumper/*
 Plugins/LinearMotion/*
 
-Content/*
+#Content/*
