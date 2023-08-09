@@ -82,7 +82,8 @@ Configs/*
 !Plugins/SML/
 !Plugins/SMLEditor/
 !Plugins/ExampleMod/
-
+Plugins/AssetGenerator/*
+Plugins/AssetDumper/*
 Plugins/LinearMotion/*
 
-#Content/FactoryGame/*
+Content/*

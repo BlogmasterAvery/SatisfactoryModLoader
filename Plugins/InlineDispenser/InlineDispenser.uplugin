@@ -1,0 +1,84 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"SemVersion": "1.0.0",
+	"FriendlyName": "InlineDispenser",
+	"Description": "",
+	"Category": "Modding",
+	"CreatedBy": "Avery",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "InlineDispenser",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "SML",
+			"SemVersion": "^3.2.0",
+			"Enabled": true,
+			"bIsOptional": false
+		},
+		{
+			"Name": "Dispenser",
+			"SemVersion": "^3.0.0",
+			"Enabled": true,
+			"bIsOptional": false
+		},
+		{
+			"Name": "Hopper",
+			"SemVersion": "^3.0.0",
+			"Enabled": true,
+			"bIsOptional": false
+		},
+		{
+			"Name": "OnlineSubsystem",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		},
+		{
+			"Name": "OnlineSubsystemUtils",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		},
+		{
+			"Name": "OnlineSubsystemNull",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		},
+		{
+			"Name": "SignificanceManager",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		},
+		{
+			"Name": "PhysXVehicles",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		},
+		{
+			"Name": "ApexDestruction",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		},
+		{
+			"Name": "Wwise",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		},
+		{
+			"Name": "ReplicationGraph",
+			"Enabled": true,
+			"bIsBasePlugin": true
+		}
+	]
+}

@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.0",
+	"SemVersion": "1.0.0",
 	"FriendlyName": "VerticalSplitter",
-	"Description": "",
+	"Description": "Adds splitters and mergers with top/bottom ports.",
 	"Category": "Other",
 	"CreatedBy": "Avery",
 	"CreatedByURL": "",
@@ -13,5 +13,13 @@
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
-	"Installed": false
+	"Installed": false,
+	"Plugins": [
+		{
+			"Name": "SML",
+			"SemVersion": "^3.2.0",
+			"bIsOptional": false,
+			"Enabled": true
+		}
+	]
 }
