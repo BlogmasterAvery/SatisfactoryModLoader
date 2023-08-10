@@ -33,60 +33,61 @@ public:
 	virtual void BeginPlay() override;
 
 protected:
-
 	// Begin Factory_ interface
 	virtual void Factory_Tick( float dt ) override;
 	// End Factory_ interface
 
-	// Begin AFGBuildableGeneratorFuel
-	virtual void LoadFuel() override;
-	// End AFGBuildableGeneratorFuel
+	// Begin FGBuildableFactory interface
+	virtual void OnRep_ReplicationDetailActor() override;
+	// End FGBuildableFactory interface
 	
 	// Begin AFGBuildableGenerator interface
-	virtual bool Factory_HasPower() const override;
 	virtual bool CanStartPowerProduction_Implementation() const override;
 	// End AFGBuildableGenerator interface
+
+	// Begin AFGBuildableGeneratorFuel interface
+	virtual bool CanLoadFuel() const override;
+	virtual void LoadFuel() override;
+	// End AFGBuildableGeneratorFuel interface
 
 	// Begin IFGReplicationDetailActorOwnerInterface
 	virtual UClass* GetReplicationDetailActorClass() const override { return AFGReplicationDetailActor_GeneratorNuclear::StaticClass(); };
 	virtual void OnReplicationDetailActorRemoved() override;
+	
+	class AFGReplicationDetailActor_GeneratorNuclear* GetCastRepDetailsActor() const;
 	// End IFGReplicationDetailActorOwnerInterface
 
 	bool IsWasteFull() const;
-
-	/** We can only load fuel if waste is not full */
-	virtual bool CanLoadFuel() const override;
-
+	
 	/** Try to produce nuclear waste and put it in the output inventory */
 	void TryProduceWaste();
 
 	/** Returns the inventory for waste in the nuclear generator */
 	UFUNCTION( BlueprintPure, Category = "Nuclear" )
-	FORCEINLINE class UFGInventoryComponent* GetWasteInventory() const { return mOutputInventoryHandler->GetActiveInventoryComponent(); }
+	FORCEINLINE class UFGInventoryComponent* GetWasteInventory() const { return mOutputInventoryHandlerData.GetActiveInventoryComponent(); }
 
 	/** Returns the current active warning for this nuclear generator */
 	UFUNCTION( BlueprintPure, Category = "Nuclear" )
 	FORCEINLINE EGeneratorNuclearWarning GetCurrentGeneratorNuclearWarning() const { return mCurrentGeneratorNuclearWarning; }
-	
+
+	virtual void GetAllReplicationDetailDataMembers(TArray<FReplicationDetailData*>& out_repDetailData) override
+	{
+		Super::GetAllReplicationDetailDataMembers( out_repDetailData );
+		out_repDetailData.Add( &mOutputInventoryHandlerData );
+	}
 private:
-	
-	friend class AFGReplicationDetailActor_GeneratorNuclear;
-
-	virtual void OnRep_ReplicationDetailActor() override;
-
-	class AFGReplicationDetailActor_GeneratorNuclear* GetCastRepDetailsActor() const;
-
-	/** Check if the waste inventory has space for the waste item of the fuel in the fuel inventory.
-	 *  will return true if fuel inventory is empty
-	 */
+	/** Check if the waste inventory has space for the waste item of the fuel in the fuel inventory. */
 	bool CanFitWasteOfNextFuelClass() const;
 
+private:
+	friend class AFGReplicationDetailActor_GeneratorNuclear;
+	
 	/** Spent fuel rods goes here. */
 	UPROPERTY( SaveGame )
 	class UFGInventoryComponent* mOutputInventory;
 
 	UPROPERTY()
-	UFGReplicationDetailInventoryComponent* mOutputInventoryHandler;
+	FReplicationDetailData mOutputInventoryHandlerData;
 
 	/** Waste left to produce from the current fuel rod*/
 	UPROPERTY( SaveGame )
@@ -95,5 +96,4 @@ private:
 	/** Current active warning on this nuclear generator */
 	UPROPERTY( Replicated )
 	EGeneratorNuclearWarning mCurrentGeneratorNuclearWarning;
-
 };

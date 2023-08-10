@@ -3,37 +3,43 @@
 #include "Hologram/FGConveyorBeltHologram.h"
 
 AFGConveyorBeltHologram::AFGConveyorBeltHologram() : Super() {
-	this->mChildPoleHologram = nullptr;
+	this->mChildPoleHologram[0] = nullptr;
+	this->mChildPoleHologram[1] = nullptr;
+	this->mChildWallPoleHologram[0] = nullptr;
+	this->mChildWallPoleHologram[1] = nullptr;
+	this->mChildCeilingPoleHologram[0] = nullptr;
+	this->mChildCeilingPoleHologram[1] = nullptr;
+	this->mChildWallPoleSnapConnection[0] = nullptr;
+	this->mChildWallPoleSnapConnection[1] = nullptr;
+	this->mChildCeilingPoleSnapConnection[0] = nullptr;
+	this->mChildCeilingPoleSnapConnection[1] = nullptr;
 	this->mConnectionComponents[0] = nullptr;
 	this->mConnectionComponents[1] = nullptr;
 	this->mSnappedConnectionComponents[0] = nullptr;
 	this->mSnappedConnectionComponents[1] = nullptr;
 	this->mUpgradedConveyorBelt = nullptr;
 	this->mDefaultConveyorPoleRecipe = nullptr;
+	this->mDefaultConveyorWallPoleRecipe = nullptr;
+	this->mDefaultConveyorCeilingPoleRecipe = nullptr;
 	this->mBendRadius = 199.0;
 	this->mMaxSplineLength = 5600.1;
 	this->mMaxIncline = 35.0;
 	this->mConnectionArrowComponentDirection = EFactoryConnectionDirection::FCD_ANY;
 	this->mConnectionArrowComponent = nullptr;
-	this->mConstructionPoleLocations[0].X = 0.0;;
-	this->mConstructionPoleLocations[0].Y = 0.0;;
-	this->mConstructionPoleLocations[0].Z = 0.0;;
-	this->mConstructionPoleLocations[1].X = 0.0;;
-	this->mConstructionPoleLocations[1].Y = 0.0;;
-	this->mConstructionPoleLocations[1].Z = 0.0;;
-	this->mConstructionPoleRotations[0].Pitch = 0.0;;
-	this->mConstructionPoleRotations[0].Yaw = 0.0;;
-	this->mConstructionPoleRotations[0].Roll = 0.0;;
-	this->mConstructionPoleRotations[1].Pitch = 0.0;;
-	this->mConstructionPoleRotations[1].Yaw = 0.0;;
-	this->mConstructionPoleRotations[1].Roll = 0.0;;
+	this->mConstructionPoleLocations[0] = FVector::ZeroVector;
+	this->mConstructionPoleLocations[1] = FVector::ZeroVector;
+	this->mConstructionPoleRotations[0] = FRotator::ZeroRotator;
+	this->mConstructionPoleRotations[1] = FRotator::ZeroRotator;
 	this->mMesh = nullptr;
 	this->mNeedsValidFloor = false;
 	this->mUseBuildClearanceOverlapSnapp = false;
+	this->mAllowEdgePlacementInDesignerEvenOnIntersect = true;
 }
 void AFGConveyorBeltHologram::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AFGConveyorBeltHologram, mChildPoleHologram);
+	DOREPLIFETIME(AFGConveyorBeltHologram, mChildWallPoleHologram);
+	DOREPLIFETIME(AFGConveyorBeltHologram, mChildCeilingPoleHologram);
 	DOREPLIFETIME(AFGConveyorBeltHologram, mConnectionArrowComponentDirection);
 }
 void AFGConveyorBeltHologram::BeginPlay(){ }
@@ -46,12 +52,15 @@ void AFGConveyorBeltHologram::OnInvalidHitResult(){ }
 void AFGConveyorBeltHologram::SpawnChildren(AActor* hologramOwner, FVector spawnLocation, APawn* hologramInstigator){ }
 bool AFGConveyorBeltHologram::IsValidHitResult(const FHitResult& hitResult) const{ return bool(); }
 void AFGConveyorBeltHologram::AdjustForGround(FVector& out_adjustedLocation, FRotator& out_adjustedRotation){ }
-void AFGConveyorBeltHologram::PreHologramPlacement(){ }
-void AFGConveyorBeltHologram::PostHologramPlacement(){ }
+void AFGConveyorBeltHologram::PreHologramPlacement(const FHitResult& hitResult){ }
+void AFGConveyorBeltHologram::PostHologramPlacement(const FHitResult& hitResult){ }
 bool AFGConveyorBeltHologram::TrySnapToActor(const FHitResult& hitResult){ return bool(); }
 void AFGConveyorBeltHologram::Scroll(int32 delta){ }
-void AFGConveyorBeltHologram::GetSupportedScrollModes(TArray<EHologramScrollMode>* out_modes) const{ }
 float AFGConveyorBeltHologram::GetHologramHoverHeight() const{ return float(); }
+void AFGConveyorBeltHologram::GetIgnoredClearanceActors(TArray< AActor* >& ignoredActors) const{ }
+void AFGConveyorBeltHologram::CheckBlueprintCommingling(){ }
+AFGHologram* AFGConveyorBeltHologram::GetNudgeHologramTarget(){ return nullptr; }
+bool AFGConveyorBeltHologram::CanTakeNextBuildStep() const{ return bool(); }
 void AFGConveyorBeltHologram::SerializeConstructMessage(FArchive& ar, FNetConstructionID id){ }
 void AFGConveyorBeltHologram::ClientPreConstructMessageSerialization(){ }
 void AFGConveyorBeltHologram::ServerPostConstructMessageDeserialization(){ }

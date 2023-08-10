@@ -10,6 +10,7 @@ AFGBuildablePowerPole::AFGBuildablePowerPole() : Super() {
 	this->mConnectionWidgetClass = nullptr;
 	this->mMeshComponentProxy = CreateDefaultSubobject<UFGColoredInstanceMeshProxy>(TEXT("PoleMeshProxy"));
 	this->mPowerPoleType = EPowerPoleType::PPT_POLE;
+	this->mPowerTowerWireMaxLength = 100000.0;
 	this->mHasPower = false;
 	this->mHologramClass = AFGBuildableHologram::StaticClass();
 	this->mMeshComponentProxy->SetupAttachment(RootComponent);
@@ -24,6 +25,7 @@ void AFGBuildablePowerPole::StopIsLookedAtForConnection( AFGCharacterPlayer* byC
 void AFGBuildablePowerPole::ShowConnectionFeedback( UFGCircuitConnectionComponent* overlappingConnection){ }
 void AFGBuildablePowerPole::HideConnectionFeedback(){ }
 void AFGBuildablePowerPole::Dismantle_Implementation(){ }
+bool AFGBuildablePowerPole::ShouldBeConsideredForBase_Implementation(){ return bool(); }
 void AFGBuildablePowerPole::OnBuildEffectFinished(){ }
 UFGPowerCircuit* AFGBuildablePowerPole::GetPowerCircuit() const{ return nullptr; }
 void AFGBuildablePowerPole::OnPowerConnectionChanged( UFGCircuitConnectionComponent* connection){ }

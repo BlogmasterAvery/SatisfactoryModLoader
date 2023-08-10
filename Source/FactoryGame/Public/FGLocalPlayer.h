@@ -9,7 +9,7 @@
 #include "Engine/LocalPlayer.h"
 #include "OnlineSubsystemTypes.h"
 #include "FGErrorMessage.h"
-#include "UObject/CoreOnline.h"
+#include "Online/CoreOnline.h"
 #include "EOSAccountHelpers.h"
 #include "FindSessionsCallbackProxy.h"
 #include "EOSSDKForwards.h"
@@ -17,6 +17,7 @@
 #include "FGLocalPlayer.generated.h"
 
 
+class UFGInputMappingContext;
 UCLASS()
 class UFGEM_LoggedOutFromOnlineService : public UFGErrorMessage
 {
@@ -103,6 +104,7 @@ FORCEINLINE uint32 GetTypeHash( const FFGOnlineFriend& onlineFriend )
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE( FOnMultiplayerStatusUpdated );
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams( FOnAccountConnectionComplete, const FName, currentPlatform, EEosAccountConnectionResult, result );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FOnAccountUnlinkComplete, bool, result );
 
 
 // Workaround as it seems like you can't have a TArray<FFGOnlineFriends> exposed to a Dynamic multicast delegate
@@ -158,9 +160,13 @@ public:
 	UFGLocalPlayer();
 
 	//~Begin ULocalPlayer interface
-	virtual void PlayerAdded( class UGameViewportClient* inViewportClient, int32 inControllerID ) override;
+	virtual void PlayerAdded( class UGameViewportClient* inViewportClient, FPlatformUserId inUserId ) override;
 	virtual void PlayerRemoved() override;
 	//~End ULocalPlayer interface
+	
+	//~Begin FExec Interface
+	virtual bool Exec( UWorld* InWorld, const TCHAR* Cmd, FOutputDevice& Ar ) override;
+	//~End FExec Interface
 
 	/** Listen to option changes we care about */
 	void SubscribeToOptionUpdates();
@@ -242,6 +248,7 @@ public:
 
 	// Get the unique net id of the current local player
 	TSharedPtr<const FUniqueNetId> GetPlayerId() const;
+	TSharedPtr<const FUniqueNetId> GetPlayerIdEpic() const;
 	TSharedPtr<const FUniqueNetId> GetPlayerIdSteam() const;
 
 
@@ -262,6 +269,25 @@ public:
 
 	/** Continue without linking an account to our current one */
 	void ContinueWithoutConnectingAccount( const FName currentPlatform );
+
+	/** Triggered when we want to wait for steam connect and then reset account linking */
+	UFUNCTION()
+	void ResetAccountLinkingAfterConnect( FName currentPlatform, EEosAccountConnectionResult result );
+
+	/** Triggered when we want to wait for epic logout and then reset account linking */
+	UFUNCTION()
+	void ResetAccountLinkingAfterEpicLogout( FName currentPlatform, EEosAccountConnectionResult result );
+
+	/** Try to unlink current logged in account.*/
+	UFUNCTION( BlueprintCallable, Category="Online" )
+	void TryResetAccountLinking();
+
+	/** Unlinks the current logged in account. Assumes we have only one account logged in */
+	void UnlinkAccount();
+
+	/** Called after unlinking. Lets the player redo account connecection */
+	UFUNCTION()
+	void LinkAccount();
 
 	virtual void SwitchController(class APlayerController* PC) override;
 
@@ -284,6 +310,7 @@ public:
 
 	void ContinueWithoutMultiplayer();
 
+	void FindChildMappingContexts( const UFGInputMappingContext* mainContext, TArray<UFGInputMappingContext*>& out_childContexts ) const;
 protected:
 	//~Begin Online Delegates
 	//~Begin OnlineIdentity delegates
@@ -354,6 +381,10 @@ private:
 public:
 	/** Called when the when we have a result from connection accounts */
 	FOnAccountConnectionComplete mOnAccountConnectionComplete;
+
+	/** Called when the when we have a result from unlink accounts */
+	UPROPERTY(BlueprintAssignable,Category="FactoryGame|Online")
+	FOnAccountUnlinkComplete mOnAccountUnlinkComplete;
 
 	/** Called when the state of waiting for EOS connect login response changed or we continued playing without multiplayer*/
 	UPROPERTY(BlueprintAssignable,Category="FactoryGame|Online")
@@ -446,4 +477,12 @@ protected:
 	bool mStartedAccountConnectionProcess = false;
 	bool mHastTriedLoggingIn = false;
 	bool mAutoSignedOutEpicDueToIncompatibility = false;
+	bool mResetAccountLinkingIsWaitingForEpicLogout = false;
+
+	/**
+	 * A cache of the parent to children mapping contexts, built when the player is added
+	 * Used to avoid frequently looking up asset registry when we are re-binding the input contexts on the player
+	 * TODO @Nick: FGLocalPlayer doesn't seem like the best place for this, but making a local player subsystem for this sounds a bit excessive
+	 */
+	TMultiMap<TSoftObjectPtr<UFGInputMappingContext>, TSoftObjectPtr<UFGInputMappingContext>> mParentToChildMappingContexts;
 };

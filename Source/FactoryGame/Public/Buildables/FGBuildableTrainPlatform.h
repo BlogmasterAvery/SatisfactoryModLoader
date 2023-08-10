@@ -45,7 +45,7 @@ public:
 	// Begin IFGDismantlableInterface
 	virtual bool CanDismantle_Implementation() const override;
 	virtual void Dismantle_Implementation() override;
-	virtual void GetDismantleRefund_Implementation( TArray< FInventoryStack >& out_refund ) const override;
+	virtual void GetDismantleRefund_Implementation( TArray< FInventoryStack >& out_refund, bool noBuildCostEnabled ) const override;
 	// End IFGDismantlableInterface
 
 	//~ Begin IFGUseableInterface
@@ -144,7 +144,7 @@ protected:
 	UPROPERTY()
 	FTimerHandle mIdleUpdateTimerHandle;
 
-	UPROPERTY()
+	UPROPERTY( Replicated )
 	bool mDockWasCancelled;
 
 private:

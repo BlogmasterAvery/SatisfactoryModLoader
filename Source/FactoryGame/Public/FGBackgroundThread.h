@@ -318,7 +318,7 @@ struct FACTORYGAME_API FPoolItem
 
 	/* Returns true when item is allowed to use the pool system
 	* for example, the context has no power, or is disabled etc */
-	FORCEINLINE bool IsActive() const		{ return Relevance != INDEX_NONE; }
+	FORCEINLINE bool IsActive() const		{ return FMath::TruncToInt( Relevance ) != INDEX_NONE; }
 
 	/* Returns true when instance is assigned. */
 	FORCEINLINE bool IsInstanced() const	{ return Instance != nullptr; }
@@ -350,19 +350,6 @@ struct FACTORYGAME_API FPoolItem
 
 		// Max 0 since it can become below zero otherwise when applying the radius offset, below 0 values are considered "off" 
 		Relevance = FMath::Max< float >( dist / FMath::Square( MaxRelevance * RelevancyMultiplier ), 0.f);
-
-		
-#if 0
-		// Maybe to consider for the future.
-		FVector dirToInstance = Transform.GetLocation() - pawnLocation;
-		dirToInstance.Normalize(0.01f);
-		
-		float dotP = FMath::Clamp(FVector::DotProduct( dirToInstance, pawnDirection ),-1.f,1.f);
-		float relevanceInfluence = dotP > -0.5 ? 1 :  2.f;	
-		
-		const float dist = FVector::DistSquared( Transform.GetLocation(), pawnLocation );
-		Relevance = (dist / FMath::Square( MaxRelevance ) ) * relevanceInfluence;	
-#endif
 	}
 
 	/* Assign relevancy location, can be different from the instance due to their target location; see lights. */
@@ -489,6 +476,28 @@ struct FACTORYGAME_API FPoolInstanceType
 	}
 };
 
+struct FACTORYGAME_API FProductionEntry
+{
+	TSubclassOf<class UFGItemDescriptor> mProducedItem;
+	uint64 mCount;
+	float mWorldTime;
+
+	FProductionEntry( const TSubclassOf<class UFGItemDescriptor> ProducedItem, uint64 NumItems, float WorldTime )
+	{
+		mProducedItem = ProducedItem;
+		mCount = NumItems;
+		mWorldTime = WorldTime;
+	}
+	
+	FProductionEntry()
+		: mProducedItem( nullptr )
+		, mCount( 0 )
+		, mWorldTime( 0 )
+	{
+		
+	}
+};
+
 class FACTORYGAME_API FFGBackgroundThread :	public FRunnable
 {
 	FFGBackgroundThread( UWorld* WorldContext );
@@ -511,6 +520,11 @@ public:
 #endif
 	
 private:
+	// Production Data
+	TQueue<FProductionEntry,EQueueMode::Mpsc> mProductionDataQueue;
+
+	TMap< TSubclassOf<class UFGItemDescriptor>, uint64 > mProducedItems;
+	
 	// TODO consider a weak ptr?
 	/** Cached pointer to the world, made when initialized. */
 	UWorld* mWorldContext;
@@ -658,7 +672,13 @@ private:
 public:
 	void MarkScalabilityDirty() { mShouldUpdateScalability.Set( 1 ); }
 	FORCEINLINE int32 GetCurrentScalabilityLevel() const { return CurrentLevel; }
-	// End Scalability	
+	// End Scalability
+
+	static void EnqueueProductionEntry( const TSubclassOf<class UFGItemDescriptor> mProducedItem, uint64 mCount, float mWorldTime, AActor* Actor );
+
+	void ResolveProductionQueue();
+	
+	void DispatchToStatisticsSubsystem();
 	
 #if !UE_BUILD_SHIPPING
 public:
@@ -791,63 +811,63 @@ struct FACTORYGAME_API FFGPoolType
 	
 	/* Type */
 	UPROPERTY( EditDefaultsOnly )
-	EPoolType Type;
+	EPoolType Type = EPoolType::EPT_Undefined;
 
 	/* Component placed in the blueprint to handle this instance. */
 	UPROPERTY( EditDefaultsOnly )
-	TSubclassOf< UFGPoolableProxyComponentBase > mProxyComponent;
+	TSubclassOf< UFGPoolableProxyComponentBase > mProxyComponent = {};
 	
 	/* Max Default count of instances in the world. */
 	UPROPERTY( EditDefaultsOnly, meta = ( EditCondition = "!bInstanced" ) )
-	int32 Count;
+	int32 Count = 0;
 	
 	/* Draw distance the world instances get relevant,
 	* it could be that lights further away from the player still isn't relevant due to the max pool count.*/
 	UPROPERTY( EditDefaultsOnly)
-	float RelevanceDistance;
+	float RelevanceDistance = 0.f;
 	
 	/* Should the instance try to snap to the nearest foundation / non factory building.
     * Needed for ceiling lights and other spotlight based lights */
     UPROPERTY( EditDefaultsOnly, Category = "Range" )
-    bool bAdjustHeight;
+    bool bAdjustHeight = false;
     	
 	// TODO uncomment with ue 4.25
 	UPROPERTY( EditDefaultsOnly, Category = "Mesh" /*, meta = ( EditCondition = "Type == EPT_StaticMesh || Type == EPT_InstanceMesh") */)
-	UStaticMesh* mVisual_Mesh;
+	UStaticMesh* mVisual_Mesh = nullptr;
 
 	/* DEPRECATED */
 	UPROPERTY( EditDefaultsOnly )
-	bool bVisual_Instanced;
+	bool bVisual_Instanced = false;
 
 	/*~~~~~~ Count scalability ~~~~~~*/
 	/* The string used for count scalability checks. */
 	UPROPERTY( EditDefaultsOnly )
-	FString mCVarCountScalabilityString;
-	IConsoleVariable* mCachedCountScalabilityConsoleVariable;
+	FString mCVarCountScalabilityString = {};
+	IConsoleVariable* mCachedCountScalabilityConsoleVariable = nullptr;
 
 	UPROPERTY( EditDefaultsOnly, meta = (DisplayName = "Count Default Value"))
-	int32 mCachedCountScalabilityValue;
-	bool mIsCountScalabilityDirty;
+	int32 mCachedCountScalabilityValue = 0;
+	bool mIsCountScalabilityDirty = false;
 
 	/*~~~~~~ Relevancy scalability ~~~~~~*/
 	/* The string used for relevancy scalability checks. */
 	UPROPERTY( EditDefaultsOnly )
-	FString mCVarRelevancyScalabilityString;	
-	IConsoleVariable* mCachedRelevancyScalabilityConsoleVariable;
+	FString mCVarRelevancyScalabilityString = {};	
+	IConsoleVariable* mCachedRelevancyScalabilityConsoleVariable = nullptr;
 	
 	UPROPERTY( EditDefaultsOnly, meta = (DisplayName = "Relevancy Scale Default Value"))
-	float mCachedRelevancyScaleScalabilityValue;
-	bool mIsRelevancyScalabilityDirty;
+	float mCachedRelevancyScaleScalabilityValue = 0.f;
+	bool mIsRelevancyScalabilityDirty = false;
 
 	/*~~~~~~ Quality scalability ~~~~~~*/
 	/* The string used for quality scalability checks. */
 	UPROPERTY( EditDefaultsOnly )
-	FString mCvarQualityScalabilityString;	
-	IConsoleVariable* mCachedQualityScaleConsoleVariable;
+	FString mCvarQualityScalabilityString = {};	
+	IConsoleVariable* mCachedQualityScaleConsoleVariable = nullptr;
 	
 	UPROPERTY( EditDefaultsOnly, meta = (DisplayName = "Quality Default Value"))
-	int32 mCachedQualityScalabilityValue;
-	bool mIsQualityScalabilityDirty;
+	int32 mCachedQualityScalabilityValue = 0;
+	bool mIsQualityScalabilityDirty = false;
 };
 
 UCLASS( config = Game, defaultconfig, meta = ( DisplayName = "Pool settings" ) )

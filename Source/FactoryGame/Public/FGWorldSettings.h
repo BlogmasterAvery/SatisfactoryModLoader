@@ -10,7 +10,7 @@
 #include "FGSaveInterface.h"
 #include "FGAtmosphereVolume.h"
 #include "GameFramework/WorldSettings.h"
-#include "FGSubsystem.h"
+#include "FWPSaveDataMigrationContext.h"
 #include "FGWorldSettings.generated.h"
 
 UCLASS()
@@ -18,6 +18,7 @@ class FACTORYGAME_API AFGWorldSettings : public AWorldSettings, public IFGSaveIn
 {
 	GENERATED_BODY() 
 public:
+	/** Ctor */
 	AFGWorldSettings();
 
 	/** Getters for the subsystems */
@@ -28,6 +29,8 @@ public:
 
 	// Begin UObject interface
 	virtual void BeginDestroy() override;
+	// Magic GC function, if it exists, it will be called by the GC
+	virtual void Serialize( FArchive& ar ) override;
 	// End UObject interface
 
 	// Begin AActor interface
@@ -35,7 +38,7 @@ public:
 	virtual void CheckForErrors() override;
 	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& propertyChangedEvent ) override;
 #endif
-	virtual void PostActorCreated() override;
+	
 	virtual void PostLoad() override;
 	virtual void PreInitializeComponents() override;
 	// End AActor interface
@@ -81,8 +84,6 @@ public:
 	void UpdateWorldBounds();
 
 protected:
-	/** Called whenever a actor is spawned in editor */
-	void OnActorSpawned( AActor* actor );
 
 #if WITH_EDITOR
 	void HandleMapChanged( class UWorld* newWorld, EMapChangeType mapChangeType );
@@ -90,7 +91,7 @@ protected:
 private:
 	/** Helper to spawn subsystems. */
 	template< class C >
-	void SpawnSubsystem( C*& out_spawnedSubsystem, TSubclassOf< AFGSubsystem > spawnClass, FName spawnName )
+	void SpawnSubsystem( C*& out_spawnedSubsystem, TSubclassOf< AInfo > spawnClass, FName spawnName )
 	{
 		// @todo: Refactor, haxx as we didn't think about that there are several world infos in one world
 		// Avoid spawning subsystems if not in a persistent level, as we never expected a level to not be persistent
@@ -137,6 +138,27 @@ public:
 	/** The default settings of the exponential height fog to apply */
 	UPROPERTY( EditInstanceOnly, Category = "HeightFog" )
 	FExponentialFogSettings mDefaultHeightFogSettings;
+
+#if WITH_EDITORONLY_DATA	
+	/** This is the grid name that all InstancedFoliageActors will be placed on. Only used with world partition. */
+	UPROPERTY(EditInstanceOnly, Category = "Foliage")
+	FName mFoliageRuntimeGrid;
+#endif
+
+#if WITH_EDITOR
+	void SetFoliageRemovalSubsystem(AFGFoliageRemovalSubsystem* foliageRemovalSubsystem)
+	{
+		mFoliageRemovalSubsystem = foliageRemovalSubsystem;
+		Modify();
+	}
+#endif
+	
+	UPROPERTY( VisibleAnywhere )
+	FWorldPartitionValidationData SaveGameValidationData;
+
+	UPROPERTY( VisibleAnywhere )
+	TMap<FString, FWPCellIdentifier> WPActorCellMapping;
+	
 protected:
 	/** Set the height fog that's placed in the world here */
 	UPROPERTY( EditInstanceOnly, Category = "HeightFog" )
@@ -164,14 +186,14 @@ protected:
 	/** Time of day to start the day (in hours) */
 	UPROPERTY( EditInstanceOnly, Category = "Time", meta = ( UIMin = 0, UIMax = 24, ClampMin = 0, ClampMax = 24 ) )
 	float mStartTimeOfDay;
-private:
 
+
+private:
 	UPROPERTY( SaveGame )
 	class AFGBuildableSubsystem* mBuildableSubsystem;
 
 	UPROPERTY()
 	class AFGAudioVolumeSubsystem* mAudioVolumeSubsystem;
-
 	UPROPERTY()
 	class AFGFoliageRemovalSubsystem* mFoliageRemovalSubsystem;
 

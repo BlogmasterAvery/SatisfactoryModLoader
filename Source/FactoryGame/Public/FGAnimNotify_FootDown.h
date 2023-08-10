@@ -3,11 +3,11 @@
 #pragma once
 
 #include "FactoryGame.h"
-#include "Animation/AnimNotifies/AnimNotify.h"
+#include "FGAnimNotify.h"
 #include "FGAnimNotify_FootDown.generated.h"
 
 UCLASS()
-class FACTORYGAME_API UFGAnimNotify_FootDown : public UAnimNotify
+class FACTORYGAME_API UFGAnimNotify_FootDown : public UFGAnimNotify
 {
 	GENERATED_BODY()
 public:
@@ -16,7 +16,7 @@ public:
 
 	//~ Begin UAnimNotify interface
 	virtual FString GetNotifyName_Implementation() const override;
-	virtual void Notify( USkeletalMeshComponent* meshComp, UAnimSequenceBase* animation ) override;
+	virtual void Notify( USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference ) override;
 	//~ End UAnimNotify interface
 protected:
 	/** Foot */

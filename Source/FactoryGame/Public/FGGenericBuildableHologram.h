@@ -22,6 +22,7 @@ enum class EPillarSnappingMode : uint8
 {
 	PSM_None				UMETA( DisplayName = "None" ),
 	PSM_KeepUpright			UMETA( DisplayName = "Snapping allowed, but kept upright" ),
+	PSM_Underneath			UMETA( DisplayName = "Snapping allowed, but only underneath" ),
 	PSM_AllSides			UMETA( DisplayName = "All sides" )
 };
 
@@ -42,17 +43,23 @@ public:
 	// Begin AFGHologram interface
 	virtual bool TrySnapToActor( const FHitResult& hitResult ) override;
 	virtual int32 GetRotationStep() const override;
+	virtual ENudgeFailReason NudgeHologram( const FVector& NudgeInput, const FHitResult& HitResult ) override;
+	virtual void UpdateRotationValuesFromTransform() override;
 	// End AFGHologram interface
 	
 protected:
 	// Begin AFGBuildableHologram interface
-	virtual bool IsHologramIdenticalToBuildable( AFGBuildable* buildable, const FVector& hologramLocationOffset ) const override;
+	virtual bool IsHologramIdenticalToActor( AActor* actor, const FVector& hologramLocationOffset ) const override;
 	// End AFGBuildableHologram interface
 	
 protected:
 	/** Are you allowed to rotate this attachment on the walls surface. */
 	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Snapping" )
 	bool mIsWallRotationAllowed;
+
+	/** Allow granular rotation when SnapToGuidelines is held. */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Snapping" )
+	bool mAllowGranularRotation;
 
 	/** Whether or not it is possible to snap to the floor. */
 	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Snapping" )

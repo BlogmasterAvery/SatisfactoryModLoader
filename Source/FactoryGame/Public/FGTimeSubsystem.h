@@ -19,14 +19,11 @@ class FACTORYGAME_API AFGTimeOfDaySubsystem : public AFGSubsystem, public IFGSav
 {
 	GENERATED_BODY()
 public:
-	enum
-	{
-		SecondsPerMinute = 60,
-		MinutesPerHour = 60,
-		MinutesPerDay = 1440,
-		SecondsPerHour = 3600,
-		SecondsPerDay = 86400
-	};
+	static constexpr float SECONDS_PER_MINUTE = 60;
+	static constexpr float MINUTES_PER_HOUR = 60;
+	static constexpr float MINUTES_PER_DAY = 1440;
+	static constexpr float SECONDS_PER_HOUR = 3600;
+	static constexpr float SECONDS_PER_DAY = 86400;
 
 	AFGTimeOfDaySubsystem();
 	
@@ -207,6 +204,12 @@ protected:
 
 	/** Accumulated time */
 	float mRTPCAccumulator;
+	
+	UPROPERTY( EditDefaultsOnly )
+	UMaterialParameterCollection* mTimeOfDayMaterialParameterCollection;
+
+	UPROPERTY(Transient)
+	UMaterialParameterCollectionInstance* mCachedTimeOfDayMaterialParameterCollection;
 
 #if WITH_EDITORONLY_DATA
 	// Notify so that other can hook up themself on it to be notified in the editor if the time of day is updated

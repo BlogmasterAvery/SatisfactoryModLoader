@@ -63,271 +63,46 @@ struct FDroneTripInformation
 
 	/** How long it took for the drone to go to the other station and back again. */
 	UPROPERTY( BlueprintReadOnly, VisibleAnywhere, SaveGame )
-	float TripDuration;
+	float TripDuration = 0.f;
 
 	/** Number of items received from paired station. */
 	UPROPERTY( BlueprintReadOnly, VisibleAnywhere, SaveGame )
-	int32 IncomingItemCount;
+	int32 IncomingItemCount = 0;
 	
 	/** Number of items transferred to paired station. */
 	UPROPERTY( BlueprintReadOnly, VisibleAnywhere, SaveGame )
-	int32 OutgoingItemCount;
+	int32 OutgoingItemCount = 0;
 
 	/** Number of stacks received from paired station. */
 	UPROPERTY( BlueprintReadOnly, VisibleAnywhere, SaveGame )
-	float IncomingItemStacks;
+	float IncomingItemStacks = 0.f;
 
 	/** Number of stacks transferred to paired station. */
 	UPROPERTY( BlueprintReadOnly, VisibleAnywhere, SaveGame )
-	float OutgoingItemStacks;
-};
-
-/** Drone Actions */
-UCLASS()
-class FACTORYGAME_API UFGDroneAction : public UObject, public IFGSaveInterface
-{
-	GENERATED_BODY()
-public:
-	UFGDroneAction();
-	
-	virtual ~UFGDroneAction() {}
-
-	// Begin IFGSaveInterface
-	virtual void PostLoadGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
-	virtual bool NeedTransform_Implementation() override;
-	virtual bool ShouldSave_Implementation() const override;
-	// End IFGSaveInterface
-	
-	virtual void Begin() {}
-	virtual void End() {}
-	virtual void Tick( float dt ) {}
-	
-	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData = nullptr ) {}
-
-#ifdef DEBUG_DRONES
-	virtual void DisplayDebugInformation();
-#endif
-	
-	virtual bool IsDone() const { return true; }
-	virtual FString GetActionName() const { return "NULL ACTION"; }
-
-protected:
-	void PushAction( UFGDroneAction* pAction );
-
-protected:
-	UPROPERTY()
-	class AFGDroneVehicle* mDrone;
-};
-
-// Timed Action
-UCLASS()
-class FACTORYGAME_API UFGDroneAction_Timed : public UFGDroneAction
-{
-	GENERATED_BODY()
-public:
-	UFGDroneAction_Timed();
-	
-	virtual void Tick( float dt ) override;
-	virtual bool IsDone() const override;
-
-	virtual float GetActionDuration() const { return 0.0f; }
-
-#ifdef DEBUG_DRONES
-	virtual void DisplayDebugInformation() override;
-#endif
-
-protected:
-	float mTimer;
-};
-
-// Travel
-UCLASS()
-class FACTORYGAME_API UFGDroneAction_TraversePath : public UFGDroneAction
-{
-	GENERATED_BODY()
-public:
-	UFGDroneAction_TraversePath();
-	
-	void SetPath( const TArray<FVector>& Path, EDroneFlyingMode FlyingMode, bool StopAtDestination );
-	
-	virtual FString GetActionName() const override { return "Traverse Path"; }
-
-	virtual void Begin() override;
-	virtual void Tick( float dt ) override;
-	
-	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData ) override;
-
-#ifdef DEBUG_DRONES
-	virtual void DisplayDebugInformation() override;
-#endif
-
-	virtual bool IsDone() const override;
-
-private:
-	void GotoNextDestination();
-
-private:
-	UPROPERTY( SaveGame )
-	TArray<FVector> mPath;
-
-	UPROPERTY( SaveGame )
-	bool mStopAtDestination;
-
-	UPROPERTY( SaveGame )
-	EDroneFlyingMode mFlyingMode;
-
-	bool mHasArrived;
-};
-
-// Request Docking
-UENUM()
-enum class EDroneDockingRequestState : uint8
-{
-	STravelToQueueLocation			UMETA(displayName = "Travel to Queue Location"),
-    SFlyToQueueLocation				UMETA(displayName = "Fly to Queue Location"),
-    STravelToDockingAirLocation		UMETA(displayName = "Travel to Docking Air Location"),
-    SFlyToDockingAirLocation		UMETA(displayName = "Fly to Docking Air Location"),
-    SDescendToDockingLocation		UMETA(displayName = "Descend to Docking Location")
-};
-
-UCLASS()
-class FACTORYGAME_API UFGDroneAction_RequestDocking : public UFGDroneAction
-{
-	GENERATED_BODY()
-public:
-	UFGDroneAction_RequestDocking();
-	
-	void SetStation( class AFGBuildableDroneStation* Station, bool ShouldTransferItems );
-	
-	virtual FString GetActionName() const override { return "Request Docking"; }
-	
-	virtual void Begin() override;
-	virtual void End() override;
-
-	void MoveToDesignatedQueuePosition( EDroneFlyingMode FlyingMode );
-	
-	virtual void Tick( float dt ) override;
-
-	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData ) override;
-	
-	virtual bool IsDone() const override;
-
-#ifdef DEBUG_DRONES
-	virtual void DisplayDebugInformation() override;
-#endif
-
-private:	
-	UPROPERTY( SaveGame )
-	class AFGBuildableDroneStation* mStation;
-
-	UPROPERTY( SaveGame )
-	EDroneDockingRequestState mCurrentState;
-	
-	UPROPERTY( SaveGame )
-	bool mShouldTransferItems;
-
-	UPROPERTY( SaveGame )
-	float mTotalQueueTime;
-	
-	bool mIsDone;
-
-	UPROPERTY( SaveGame )
-	int mQueuePosition;
-};
-
-// Docking
-UCLASS()
-class FACTORYGAME_API UFGDroneAction_DockingSequence : public UFGDroneAction_Timed
-{
-	GENERATED_BODY()
-public:
-	UFGDroneAction_DockingSequence();
-	
-	void SetStation( class AFGBuildableDroneStation* Station, bool ShouldTransferItems );
-	
-	virtual FString GetActionName() const override { return "Docking"; }
-	
-	virtual void Begin() override;
-	virtual void End() override;
-
-	virtual float GetActionDuration() const override;
-	
-private:
-	UPROPERTY( SaveGame )
-	class AFGBuildableDroneStation* mStation;
-
-	UPROPERTY( SaveGame )
-	bool mShouldTransferItems;
-};
-
-// Takeoff
-UCLASS()
-class FACTORYGAME_API UFGDroneAction_TakeoffSequence : public UFGDroneAction_Timed
-{
-	GENERATED_BODY()
-public:
-	UFGDroneAction_TakeoffSequence();
-	
-	void SetStation( class AFGBuildableDroneStation* Station );
-	
-	virtual FString GetActionName() const override { return "Takeoff"; }
-	
-	virtual void Begin() override;
-	virtual void End() override;
-
-	virtual float GetActionDuration() const override;
-
-	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData ) override;
-	
-private:
-	UPROPERTY( SaveGame )
-	class AFGBuildableDroneStation* mStation;
-
-	UPROPERTY( SaveGame )
-	class AFGBuildableDroneStation* mNewTravelDestination;
-
-	UPROPERTY( SaveGame )
-	bool mHasNewPairedStation;
-};
-
-// Travel Start
-UCLASS()
-class FACTORYGAME_API UFGDroneAction_TravelStartSequence : public UFGDroneAction_Timed
-{
-	GENERATED_BODY()
-public:	
-	void SetDestination( const FVector& Destination );
-	
-	virtual FString GetActionName() const override { return "Travel Start"; }
-	
-	virtual void Begin() override;
-	virtual void End() override;
-
-	virtual float GetActionDuration() const override;
-
-private:
-	UPROPERTY( SaveGame )
-	FVector mDestination;
+	float OutgoingItemStacks = 0.f;
 };
 
 /** Drone Vehicle */
 
 UCLASS()
-class FACTORYGAME_API AFGDroneVehicle : public AFGVehicle
+class FACTORYGAME_API AFGDroneVehicle : public AFGVehicle, public IFGActorRepresentationInterface
 {
 	GENERATED_BODY()
 
-	friend class UFGDroneAction;
-	friend class UFGDroneAction_DockingSequence;
-	friend class UFGDroneAction_TakeoffSequence;
-	friend class UFGDroneAction_TravelStartSequence;
+	friend struct FDroneAction;
+	friend struct FDroneAction_DockingSequence;
+	friend struct FDroneAction_TakeoffSequence;
+	friend struct FDroneAction_TravelStartSequence;
 public:
 	AFGDroneVehicle();
 
+	virtual void Serialize( FArchive& Ar ) override;
+	
 	// Begin AActor interface
 	virtual void BeginPlay() override;
 	virtual void Tick( float DeltaTime ) override;
 	virtual void GetLifetimeReplicatedProps( TArray<FLifetimeProperty>& OutLifetimeProps ) const override;
+	virtual void EndPlay( const EEndPlayReason::Type EndPlayReason ) override;
 	// End AActor interface
 
 	// Begin IFGUseableInterface
@@ -350,9 +125,26 @@ public:
 	// Begin IFGSaveInterface
 	virtual void PostLoadGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
 	// End IFGSaveInterface
- 
+
 	// Begin IFGActorRepresentationInterface
-	virtual FText GetActorRepresentationText() override;
+	UFUNCTION() virtual bool AddAsRepresentation() override;
+	UFUNCTION() virtual bool UpdateRepresentation() override;
+	UFUNCTION() virtual bool RemoveAsRepresentation() override;
+	UFUNCTION() virtual bool IsActorStatic() override;
+	UFUNCTION() virtual FVector GetRealActorLocation() override;
+	UFUNCTION() virtual FRotator GetRealActorRotation() override;
+	UFUNCTION() virtual class UTexture2D* GetActorRepresentationTexture() override;
+	UFUNCTION() virtual FText GetActorRepresentationText() override;
+	UFUNCTION() virtual void SetActorRepresentationText( const FText& newText ) override;
+	UFUNCTION() virtual FLinearColor GetActorRepresentationColor() override;
+	UFUNCTION() virtual void SetActorRepresentationColor( FLinearColor newColor ) override;
+	UFUNCTION() virtual ERepresentationType GetActorRepresentationType() override;
+	UFUNCTION() virtual bool GetActorShouldShowInCompass() override;
+	UFUNCTION() virtual bool GetActorShouldShowOnMap() override;
+	UFUNCTION() virtual EFogOfWarRevealType GetActorFogOfWarRevealType() override;
+	UFUNCTION() virtual float GetActorFogOfWarRevealRadius() override;
+	UFUNCTION() virtual ECompassViewDistance GetActorCompassViewDistance() override;
+	UFUNCTION() virtual void SetActorCompassViewDistance( ECompassViewDistance compassViewDistance ) override;
 	// End IFGActorRepresentationInterface
 
 	void NotifyPairedStationUpdated( class AFGBuildableDroneStation* NewPairedStation );
@@ -522,6 +314,9 @@ private:
 
 	void CalculateInventoryPotentialPower();
 
+	// Helper function to migrate from old legacy action to the refactored non-uobject system
+	FDroneAction* MigrateLegacyAction( class UFGDroneAction* action );
+
 private:	
 	/** Inventory for storage. */
 	UPROPERTY( VisibleDefaultsOnly, SaveGame )
@@ -612,10 +407,369 @@ private:
 	UPROPERTY( SaveGame )
 	class AFGBuildableDroneStation* mCurrentTripDestinationStation;
 
-	// Actions
+	// Actions (Legacy, only here for backwards compatibility with saves)
 	UPROPERTY( SaveGame )
-	TArray<UFGDroneAction*> mActionsToExecute;
+	TArray< UFGDroneAction* > mActionsToExecute;
 
 	UPROPERTY( SaveGame )
 	UFGDroneAction* mCurrentAction;
+
+	// Actions
+	TArray< FDroneAction* > mActionQueue;
+
+	FDroneAction* mActiveAction;
 };
+
+UENUM()
+enum class EDroneDockingRequestState : uint8
+{
+	STravelToQueueLocation			UMETA(displayName = "Travel to Queue Location"),
+	SFlyToQueueLocation				UMETA(displayName = "Fly to Queue Location"),
+	STravelToDockingAirLocation		UMETA(displayName = "Travel to Docking Air Location"),
+	SFlyToDockingAirLocation		UMETA(displayName = "Fly to Docking Air Location"),
+	SDescendToDockingLocation		UMETA(displayName = "Descend to Docking Location")
+};
+
+/** Legacy Drone Actions (Only here for backwards compatibility with saves) */
+UCLASS()
+class FACTORYGAME_API UFGDroneAction : public UObject, public IFGSaveInterface
+{
+	GENERATED_BODY()
+};
+
+// Timed Action
+UCLASS()
+class FACTORYGAME_API UFGDroneAction_Timed : public UFGDroneAction
+{
+	GENERATED_BODY()
+};
+
+// Travel
+UCLASS()
+class FACTORYGAME_API UFGDroneAction_TraversePath : public UFGDroneAction
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY( SaveGame )
+	TArray< FVector > mPath;
+
+	UPROPERTY( SaveGame )
+	EDroneFlyingMode mFlyingMode;
+	
+	UPROPERTY( SaveGame )
+	bool mStopAtDestination;
+
+	bool mHasArrived;
+};
+
+// Request Docking
+UCLASS()
+class FACTORYGAME_API UFGDroneAction_RequestDocking : public UFGDroneAction
+{
+	GENERATED_BODY()
+public:	
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mStation;
+
+	UPROPERTY( SaveGame )
+	EDroneDockingRequestState mCurrentState;
+	
+	UPROPERTY( SaveGame )
+	bool mShouldTransferItems;
+
+	UPROPERTY( SaveGame )
+	float mTotalQueueTime;
+	
+	bool mIsDone;
+
+	UPROPERTY( SaveGame )
+	int mQueuePosition;
+};
+
+// Docking
+UCLASS()
+class FACTORYGAME_API UFGDroneAction_DockingSequence : public UFGDroneAction_Timed
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mStation;
+
+	UPROPERTY( SaveGame )
+	bool mShouldTransferItems;
+};
+
+// Takeoff
+UCLASS()
+class FACTORYGAME_API UFGDroneAction_TakeoffSequence : public UFGDroneAction_Timed
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mStation;
+
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mNewTravelDestination;
+
+	UPROPERTY( SaveGame )
+	bool mHasNewPairedStation;
+};
+
+// Travel Start
+UCLASS()
+class FACTORYGAME_API UFGDroneAction_TravelStartSequence : public UFGDroneAction_Timed
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY( SaveGame )
+	FVector mDestination;
+};
+
+/** Drone Actions */
+class FGDroneActionFactory
+{
+public:
+	explicit FGDroneActionFactory( AFGDroneVehicle* drone );
+
+	struct FDroneAction* CreateDroneActionFromName( const FName& name ) const;
+
+private:
+	AFGDroneVehicle* mDrone;
+};
+
+// There's no virtual getter for the static struct so we need our own virtual function which grabs the static struct on each class. :)
+#define ACTION_STATIC_STRUCT_IMPL virtual UScriptStruct* GetActionStaticStruct() const override { return StaticStruct(); }
+
+USTRUCT()
+struct FACTORYGAME_API FDroneAction
+{
+	GENERATED_BODY()
+
+	friend class FGDroneActionFactory;
+public:
+	FDroneAction();
+	FDroneAction( AFGDroneVehicle* drone );
+	
+	virtual ~FDroneAction() {}
+	
+	virtual void Begin() {}
+	virtual void End() {}
+	virtual void Tick( float dt ) {}
+
+	/** Virtual getter for the action's static struct. Needs to be implemented for each action struct. */
+	virtual UScriptStruct* GetActionStaticStruct() const;
+	
+	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData = nullptr ) {}
+
+#ifdef DEBUG_DRONES
+	virtual void DisplayDebugInformation();
+#endif
+	
+	virtual bool IsDone() const { return true; }
+	virtual FString GetActionName() const { return "NULL ACTION"; }
+
+protected:
+	void PushAction( FDroneAction* action );
+
+protected:
+	TWeakObjectPtr< AFGDroneVehicle > mDrone;
+};
+
+// Timed Action
+USTRUCT()
+struct FACTORYGAME_API FDroneAction_Timed : public FDroneAction
+{
+	GENERATED_BODY()
+public:
+	FDroneAction_Timed();
+	FDroneAction_Timed( AFGDroneVehicle* drone );
+
+	ACTION_STATIC_STRUCT_IMPL
+	
+	virtual void Tick( float dt ) override;
+	virtual bool IsDone() const override;
+
+	virtual float GetActionDuration() const { return 0.0f; }
+
+#ifdef DEBUG_DRONES
+	virtual void DisplayDebugInformation() override;
+#endif
+
+protected:
+	float mTimer;
+};
+
+// Travel
+USTRUCT()
+struct FACTORYGAME_API FDroneAction_TraversePath : public FDroneAction
+{
+	GENERATED_BODY()
+public:
+	FDroneAction_TraversePath();
+	FDroneAction_TraversePath( AFGDroneVehicle* drone, const TArray< FVector >& path, EDroneFlyingMode flyingMode, bool stopAtDestination );
+	FDroneAction_TraversePath( AFGDroneVehicle* drone, const UFGDroneAction_TraversePath* legacyAction );
+
+	ACTION_STATIC_STRUCT_IMPL
+	
+	virtual FString GetActionName() const override { return "Traverse Path"; }
+
+	virtual void Begin() override;
+	virtual void Tick( float dt ) override;
+	
+	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData ) override;
+
+#ifdef DEBUG_DRONES
+	virtual void DisplayDebugInformation() override;
+#endif
+
+	virtual bool IsDone() const override;
+
+private:
+	void GotoNextDestination();
+
+private:
+	UPROPERTY( SaveGame )
+	TArray< FVector > mPath;
+
+	UPROPERTY( SaveGame )
+	EDroneFlyingMode mFlyingMode;
+
+	UPROPERTY( SaveGame )
+	bool mStopAtDestination;
+
+	bool mHasArrived;
+};
+
+// Request Docking
+USTRUCT()
+struct FACTORYGAME_API FDroneAction_RequestDocking : public FDroneAction
+{
+	GENERATED_BODY()
+public:
+	FDroneAction_RequestDocking();
+	FDroneAction_RequestDocking( AFGDroneVehicle* drone, class AFGBuildableDroneStation* station, bool shouldTransferItems );
+	FDroneAction_RequestDocking( AFGDroneVehicle* drone, const UFGDroneAction_RequestDocking* legacyAction );
+
+	ACTION_STATIC_STRUCT_IMPL
+	
+	virtual FString GetActionName() const override { return "Request Docking"; }
+	
+	virtual void Begin() override;
+	virtual void End() override;
+
+	void MoveToDesignatedQueuePosition( EDroneFlyingMode FlyingMode );
+	
+	virtual void Tick( float dt ) override;
+
+	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData ) override;
+	
+	virtual bool IsDone() const override;
+
+#ifdef DEBUG_DRONES
+	virtual void DisplayDebugInformation() override;
+#endif
+
+private:
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mStation;
+
+	UPROPERTY( SaveGame )
+	bool mShouldTransferItems;
+
+	UPROPERTY( SaveGame )
+	EDroneDockingRequestState mCurrentState;
+	
+	UPROPERTY( SaveGame )
+	float mTotalQueueTime;
+
+	UPROPERTY( SaveGame )
+	int mQueuePosition;
+
+	bool mIsDone;
+};
+
+// Docking
+USTRUCT()
+struct FACTORYGAME_API FDroneAction_DockingSequence : public FDroneAction_Timed
+{
+	GENERATED_BODY()
+public:
+	FDroneAction_DockingSequence();
+	FDroneAction_DockingSequence( AFGDroneVehicle* drone, class AFGBuildableDroneStation* station, bool shouldTransferItems );
+	FDroneAction_DockingSequence( AFGDroneVehicle* drone, const UFGDroneAction_DockingSequence* legacyAction );
+
+	ACTION_STATIC_STRUCT_IMPL
+	
+	virtual FString GetActionName() const override { return "Docking"; }
+	
+	virtual void Begin() override;
+	virtual void End() override;
+
+	virtual float GetActionDuration() const override;
+	
+private:
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mStation;
+
+	UPROPERTY( SaveGame )
+	bool mShouldTransferItems;
+};
+
+// Takeoff
+USTRUCT()
+struct FACTORYGAME_API FDroneAction_TakeoffSequence : public FDroneAction_Timed
+{
+	GENERATED_BODY()
+public:
+	FDroneAction_TakeoffSequence();
+	FDroneAction_TakeoffSequence( AFGDroneVehicle* drone, class AFGBuildableDroneStation* station );
+	FDroneAction_TakeoffSequence( AFGDroneVehicle* drone, const UFGDroneAction_TakeoffSequence* legacyAction );
+
+	ACTION_STATIC_STRUCT_IMPL
+	
+	virtual FString GetActionName() const override { return "Takeoff"; }
+	
+	virtual void Begin() override;
+	virtual void End() override;
+
+	virtual float GetActionDuration() const override;
+
+	virtual void ReceiveActionEvent( EDroneActionEvent ActionEvent, void* EventData ) override;
+	
+private:
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mStation;
+
+	UPROPERTY( SaveGame )
+	class AFGBuildableDroneStation* mNewTravelDestination;
+
+	UPROPERTY( SaveGame )
+	bool mHasNewPairedStation;
+};
+
+// Travel Start
+USTRUCT()
+struct FACTORYGAME_API FDroneAction_TravelStartSequence : public FDroneAction_Timed
+{
+	GENERATED_BODY()
+public:
+	FDroneAction_TravelStartSequence();
+	FDroneAction_TravelStartSequence( AFGDroneVehicle* drone, const FVector& destination );
+	FDroneAction_TravelStartSequence( AFGDroneVehicle* drone, const UFGDroneAction_TravelStartSequence* legacyAction );
+
+	ACTION_STATIC_STRUCT_IMPL
+	
+	virtual FString GetActionName() const override { return "Travel Start"; }
+	
+	virtual void Begin() override;
+	virtual void End() override;
+
+	virtual float GetActionDuration() const override;
+
+private:
+	UPROPERTY( SaveGame )
+	FVector mDestination;
+};
+
+#undef ACTION_STATIC_STRUCT_IMPL

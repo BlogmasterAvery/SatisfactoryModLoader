@@ -6,24 +6,58 @@
 #include "CoreMinimal.h"
 #include "FGOptionsSettings.h"
 #include "UObject/Interface.h"
+#include "Misc/Variant.h"
 #include "FGOptionInterface.generated.h"
 
+/** Since FVariants isn't supported in blueprint we need two delegates. Both delegates are supported in native code. */
 DECLARE_DYNAMIC_DELEGATE_OneParam( FOptionUpdated, FString, updatedCvar );
+DECLARE_DELEGATE_TwoParams( FOnOptionUpdated, FString, FVariant );
 
-UINTERFACE( Blueprintable, meta = ( CannotImplementInterfaceInBlueprint ) )
+UINTERFACE( MinimalAPI, BlueprintType, NotBlueprintable )
 class UFGOptionInterface : public UInterface
 {
 	GENERATED_BODY()
 };
 
+
 /**
- * 
+ * Interface for all settings in game including Options Menu and Advanced Game User Settings (Game Modes).
  */
 class FACTORYGAME_API IFGOptionInterface
 {
 	GENERATED_BODY()
 
 public:
+	
+	/** Returns the applied value for setting with the given strID */
+	virtual FVariant GetOptionValue( const FString& strId ) const = 0;
+	/** Returns the applied value for setting with the given strID. If no setting with strId is found default value is returned. */
+	virtual FVariant GetOptionValue( const FString& strId, const FVariant& defaultValue ) const = 0;
+	/** Returns the current display value for setting with the given strID. This is the value we show in settings menus */
+	virtual FVariant GetOptionDisplayValue( const FString& strId ) const = 0;
+	/** Returns the current display value for setting with the given strID. If no setting with strId is found default value is returned */
+	virtual FVariant GetOptionDisplayValue( const FString& strId, const FVariant& defaultValue ) const = 0;
+	/** Sets the pending value of the setting with the given StrId to the given value */
+	virtual void SetOptionValue( const FString& strId, const FVariant& value ) = 0;
+	/** Force set is used when we just want to update a value and not go through the whole apply cycle. This will trigger option updated calls */
+	virtual void ForceSetOptionValue( const FString& strId, const FVariant& value, const UObject* instigator ) = 0;
+	/** Listen for changes for the setting with the given strId */
+	virtual void SubscribeToOptionUpdate( const FString& strId, const FOnOptionUpdated& onOptionUpdatedDelegate ) = 0;
+	/** Stop Listening for changes for the setting with the given strId */ 
+	virtual void UnsubscribeToOptionUpdate( const FString& strId, const FOnOptionUpdated& onOptionUpdatedDelegate ) = 0;
+	/** Is the default value applied or have we changed this option */
+	virtual bool IsDefaultValueApplied( const FString& strId ) const = 0;
+
+	UFUNCTION( BlueprintCallable, Category = "Option" )
+	virtual void ApplyChanges() = 0;
+	
+	UFUNCTION( BlueprintCallable, Category = "Option" )
+	virtual void ResetAllSettingsToDefault() = 0;
+
+	/** Resets all settings in the given categories. If subCategory is null only the main category will be reset. */
+	UFUNCTION( BlueprintCallable, Category = "Option" )
+	virtual void ResetAllSettingsInCategory( TSubclassOf< class UFGUserSettingCategory > category, TSubclassOf< class UFGUserSettingCategory > subCategory ) = 0;
+	
 	/** Get the currently active option value for a bool */
 	UFUNCTION( BlueprintCallable, Category = "Option" )
 	virtual bool GetBoolOptionValue( const FString& cvar ) const = 0;
@@ -70,7 +104,7 @@ public:
 
 	/** Returns true if we have a pending option value waiting to be applied for this cvar after we restart game or session */
 	UFUNCTION( BlueprintCallable, Category = "Option" )
-	virtual bool HasPendingAnyRestartOptionValue( const FString& cvar ) const = 0;
+	virtual bool HasAnyPendingRestartOptionValue( const FString& cvar ) const = 0;
 
 	/** Returns true if we require restart of the session for any settings to apply */
 	UFUNCTION( BlueprintCallable, Category = "Option" )
@@ -92,8 +126,8 @@ public:
 	UFUNCTION( BlueprintCallable, Category = "Option" )
 	virtual void UnsubscribeToAllDynamicOptionUpdate( UObject* boundObject ) = 0;
 
-	/** Get all option widgets of a certain category */
+	/** Returns all setting widgets for all settings this interface owns */
 	UFUNCTION( BlueprintCallable, Category = "Option" )
-	virtual TArray<class UFGDynamicOptionsRow*> GetOptionWidgetsInCategory( UUserWidget* owningWidget, EOptionCategory category ) = 0;
+	virtual TArray<FUserSettingCategoryMapping> GetCategorizedSettingWidgets( UObject* worldContext, UUserWidget* owningWidget ) = 0;
 	
 };

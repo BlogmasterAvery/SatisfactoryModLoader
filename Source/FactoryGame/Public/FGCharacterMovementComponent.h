@@ -1,42 +1,137 @@
 // Copyright Coffee Stain Studios. All Rights Reserved.
 
 #pragma once
-
 #include "FactoryGame.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Buildables/FGBuildablePipeHyperJunction.h"
 #include "FGCharacterMovementComponent.generated.h"
 
+class AFGParachute;
+class AFGBuildablePipeHyperJunction;
+class UFGPipeConnectionComponentBase;
+struct FFGPipeHyperJunctionConnectionInfo;
+struct FFGPipeHyperBasePipeData;
 
+/** Info on the pending hypertube junction */
+USTRUCT(BlueprintType)
+struct FACTORYGAME_API FFGPendingHyperJunctionInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pipe Hyper")
+	AFGBuildablePipeHyperJunction* mJunction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pipe Hyper")
+	UFGPipeConnectionComponentBase* mConnectionEnteredThrough;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pipe Hyper")
+	float mDistanceToJunction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hyper Tube")
+	float mLastJunctionCheckDistance;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hyper Tube")
+	TArray<FFGPipeHyperJunctionConnectionInfo> mAvailableOutputConnections;
+};
+
+/** A struct used as a wrapper for dynamically typed TStructOnScope<FFGPipeHyperBasePipeData> */
+USTRUCT()
+struct FACTORYGAME_API FFGPipeHyperDynamicPipeData
+{
+	GENERATED_BODY()
+	using StructOnScopeType = TStructOnScope<FFGPipeHyperBasePipeData>;
+private:
+	StructOnScopeType Data;
+public:
+	FFGPipeHyperDynamicPipeData();
+	FFGPipeHyperDynamicPipeData(const FFGPipeHyperDynamicPipeData& Other);
+	FFGPipeHyperDynamicPipeData(FFGPipeHyperDynamicPipeData&& Other) noexcept;
+
+	FFGPipeHyperDynamicPipeData& operator=(const FFGPipeHyperDynamicPipeData& Other);
+	FFGPipeHyperDynamicPipeData& operator=(FFGPipeHyperDynamicPipeData&& Other) noexcept;
+	
+	bool Serialize(FArchive& Ar);
+	void AddStructReferencedObjects(class FReferenceCollector& Collector);
+
+	/** Convenient accessors with both const and non-const versions */
+	FORCEINLINE StructOnScopeType& operator*() { return Data; }
+	FORCEINLINE const StructOnScopeType& operator*() const { return Data; }
+	FORCEINLINE StructOnScopeType& Get() { return Data; }
+	FORCEINLINE const StructOnScopeType& Get() const { return Data; }
+};
+
+template<>
+struct TStructOpsTypeTraits< FFGPipeHyperDynamicPipeData > : public TStructOpsTypeTraitsBase2< FFGPipeHyperDynamicPipeData >
+{
+	enum
+	{
+		WithAddStructReferencedObjects = true,
+		WithSerializer = true
+	};
+};
 
 USTRUCT( BlueprintType )
 struct FACTORYGAME_API FPlayerPipeHyperData
 {
 	GENERATED_BODY()
-	/** The pipe we are currently traveling in */
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "Hyper Tube" )
-	AActor* mTravelingPipeHyper;
+	
+	/** The pipe we are currently traveling in (real) */
+	UPROPERTY()
+	AActor* mTravelingPipeHyperReal;
+	/** Pipe data associated with our travel in mTravelingPipeHyper */
+	UPROPERTY()
+	FFGPipeHyperDynamicPipeData mTravelingPipeHyperRealData;
+
+	/** The pipe that we have been traveling during the last substep */
+	UPROPERTY()
 	AActor* mTravelingPipeHyperLast;
-	float mTravelingPipeHyperLastLength; //used for faster position calc if needed. If negative, it means we moved ot through it's start
-	float mLastTransitTime = 0;
+	/** Pipe data associated with our travel in mTravelingPipeHyperLast */
+	UPROPERTY()
+	FFGPipeHyperDynamicPipeData mTravelingPipeHyperLastData;
+	/** True if we transitioned into the current pipe from the end of the previous pipe, used for interpolation. If false, we transitioned from the start */
+	bool bTransitionedFromLastPipeHyperEnd;
 
 	/**The spline progress in the pipe we are currently in*/
 	float mPipeProgressReal;
 	/**The velocity we are currently traveling in along the spline of the pipe*/
 	float mPipeVelocityReal;
-	float mPipeCurrentLength;
+	FVector mPipeDirectionReal;
+	float mPipeLengthReal;
 
 	/**The spline progress in the pipe we are currently in*/
 	float mPipeProgressLast;
 	/**The velocity we are currently traveling in along the spline of the pipe*/
 	float mPipeVelocityLast;
+	FVector mPipeDirectionLast;
+	float mPipeLengthLast;
 
+	/** Accumulated delta time counter */
 	float mTimeInterpreter;
 
-	/**The spline progress in the pipe we are currently in */
-	float mPipeProgress;
+	/** True if we have a pending eject on the next sub step of the movement simulation */
+	bool bPendingEject;
+	float mPendingEjectOffset;
+	UPROPERTY()
+	class UFGPipeConnectionComponentBase* mConnectionToEjectThrough;
+	float mEjectTimeWorldSeconds;
 
+	/** Total distance travelled to this point, unsigned and irrelevant of direction changes */
+	float mTotalTravelDistanceReal;
+
+	/** The pipe we are traveling in right now */
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "Hyper Tube" )
+	AActor* mTravelingPipeHyper;
+	/**The spline progress in the pipe we are currently in */
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "Hyper Tube" )
+	float mPipeProgress;
 	/**The velocity we are currently traveling in along the spline of the pipe*/
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "Hyper Tube" )
 	float mPipeVelocity;
+	/** The forward direction of the pipe we are currently traveling */
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "Hyper Tube" )
+	FVector mPipeDirection;
+	UPROPERTY()
+	FFGPipeHyperDynamicPipeData mTravelingPipeHyperData;
 
 	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Hyper Tube" )
 	float mMinPipeSpeed = 300;
@@ -51,41 +146,36 @@ struct FACTORYGAME_API FPlayerPipeHyperData
 	float mPipeConstantAcceleration = 110.0f;
 
 	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Hyper Tube" )
-	float mPipeCurveDamping = 0.4f;;
+	float mPipeCurveDamping = 0.4f;
 
-	/**World space direction of pipe last frame.*/
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	FVector mPipeDirectionLast;
+	/** The time for which curvature dumping will be applied at the very least after a very sharp turn. */
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Hyper Tube" )
+	float mPipeCurveDumpingTime = 0.05f;
 
-	/**World space direction of pipe in current location.*/
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	FVector mPipeDirection;
+	/** Offset in the connector direction to use when ejecting the player out of the hypertube */
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Hyper Tube" )
+	float mPipeEjectOffset = 50.0f;
 
-	/**Distance to the end of the whole pipe chain, but maximum of 2000 (To save time on calculating it on update)*/
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	float mDistanceToEndOfPipe;
+	/** Amount of time the player is immune to being sucked into the same entrance they just exited from */
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Hyper Tube" )
+	float mPipeEntranceImmunityTime = 0.5f;
+
+	/** When the velocity is below this, player can manually control it's direction by input acceleration */
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Hyper Tube" )
+	float mMinManualControlVelocity = 3.0f;
+
+	/** Maximum distance to search for junctions */
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Hyper Tube" )
+	float mMaxJunctionSearchDistance = 4000.0f;
 	
-	/** maximum of 2000 (To save time on calculating it on update)*/
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	float mCombinedLengthTillEndOfPipesINcludingCurrent;
+	float mMaxCurveDiffThisFrame = 0.f;
 
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	float mMaxCurveDiffThisFrame;
-
+	float mMaxCurveDiffTimeLeft = 0.0f;
+	
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	float mMaxCurveDiffSmooth;
-
-
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	float mPipeTempMinSpeed; //used so we can reduce even further due to curves, but not have the pipes too slow in upwards slopes
-
-
-	/**World space position of the end of the pipe chain.. Only guaranteed to be accurate if the end is within 2000 units.*/
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	FVector mFulPipeEndPoint;
-	/**World space direction of the end of the pipe chain.. Only guaranteed to be accurate if the end is within 2000 units.*/
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Hyper Tube" )
-	FVector mFulPipeEndDir;
+	float mPipeTempMinSpeed = 0.f; //used so we can reduce even further due to curves, but not have the pipes too slow in upwards slopes
 
 	FVector mSoftVelocity;
 	FVector mCameraPush;
@@ -97,29 +187,26 @@ struct FACTORYGAME_API FPlayerZiplineData
 {
 	GENERATED_BODY()
 
-	FVector Point1;
-	FVector Point2;
+	/** Multiplier that controls speed based on angle of travel */
+	UPROPERTY( BlueprintReadOnly, Category = "Zipline Data" )
+	float SpeedMultiplier = 0.f;
 
 	/* World direction we're headed */
 	UPROPERTY( BlueprintReadOnly, Category = "Zipline Data" )
-	FVector Direction;
+	FVector Direction = FVector::ZeroVector;
 	
-	FVector EndPoint;
+	FVector Point1 = FVector::ZeroVector;
+	FVector Point2 = FVector::ZeroVector;
 
 	/* Velocity applied last frame from zipline movement */
-	UPROPERTY( BlueprintReadOnly, Category = "Zipline Data" )
-	FVector LastVelocityApplied;
-
-	FVector LastCorrectionVelocityApplied;
-
-	FVector ProjectedZiplineLocation;
-
-	/** Multiplier that controls speed based on angle of travel */
-	UPROPERTY( BlueprintReadOnly, Category = "Zipline Data" )
-	float SpeedMultiplier;
-
+	FVector LastVelocityApplied = FVector::ZeroVector;
+	
+	FVector LastCorrectionVelocityApplied = FVector::ZeroVector;
+	
+	FVector ProjectedZiplineLocation = FVector::ZeroVector;
+	
 	UPROPERTY()
-	AActor* AttachActor;
+	AActor* AttachActor = nullptr;
 };
 
 /**
@@ -148,20 +235,21 @@ enum class ECustomMovementMode : uint8
 
 	// Three hover modes to better represent the "current" hover state with the SavedMove system
 	CMM_Hover				UMETA( DisplayName = "Hover" ),
-	CMM_HoverSlowFall		UMETA( DisplayName = "Hover Slow Fall" )
+	CMM_HoverSlowFall		UMETA( DisplayName = "Hover Slow Fall" ),
+	CMM_Parachute			UMETA( DisplayName = "Parachute" )
 };
 inline bool operator==(const uint8 a, const ECustomMovementMode b)
 {
-	return a == (uint8 )b;
+	return a == static_cast<uint8>( b );
 }
 
 inline bool operator==(const ECustomMovementMode b , const uint8 a)
 {
-	return a == (uint8 )b;
+	return a == static_cast<uint8>( b );
 }
 
 UCLASS()
-class FACTORYGAME_API UFGCharacterMovementComponent : public UCharacterMovementComponent
+class FACTORYGAME_API UFGCharacterMovementComponent final : public UCharacterMovementComponent
 {
 	GENERATED_BODY()
 public:
@@ -172,7 +260,7 @@ public:
 	// End UActorComponent
 
 	// Begin UCharacterMovementComponent
-	virtual class FNetworkPredictionData_Client* GetPredictionData_Client() const override;
+	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	virtual bool DoJump( bool isReplayingMoves ) override;
 	virtual void CalcVelocity( float dt, float friction, bool isFluid, float brakingDeceleration ) override;
 	virtual float GetMaxSpeed() const override;
@@ -181,6 +269,7 @@ public:
 	virtual float GetMaxJumpZVelocity() const override;
 	virtual bool CanCrouchInCurrentState() const override;
 	virtual void SmoothClientPosition( float DeltaSeconds ) override;
+	virtual float ImmersionDepth() const override;
 	// End UCharacterMovementComponent
 
 	UFUNCTION( Reliable, Server, WithValidation )
@@ -200,18 +289,21 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Sprint" )
 	FORCEINLINE bool GetWantsToSprint() const { return mWantsToSprint; }
 
+	/** Toggles mWantsToSprint and sets mHoldToSprint to isHoldSprintOn. */
+	void ToggleWantsToSprintAndSetHoldSprint( const bool isHoldSprintOn );
+	
 	/** Get mBaseVelocity */
 	UFUNCTION( BlueprintPure, Category = "Movement" )
 	FORCEINLINE FVector GetBaseVelocity() const { return mBaseVelocity; }
 
 	/** Set if the player wants to sprint or not */
-	void SetWantsToSprint( bool wantsToSprint );
+	void SetWantsToSprintAndHoldSprint( const bool wantsToSprint, const bool isHoldSprintOn );
 
 	/** Get mIsSliding */
 	FORCEINLINE bool IsSliding() const { return mIsSliding; }
 
 	/** Gets the accumulated impulse we want to apply */
-	FORCEINLINE FVector GetPendingImpulseToApply(){ return PendingImpulseToApply; }
+	FORCEINLINE FVector GetPendingImpulseToApply() const { return PendingImpulseToApply; }
 
 	/** Gets last slide time */
 	FORCEINLINE float GetLastSlideTime() const{ return mLastSlideTime; }
@@ -220,54 +312,57 @@ public:
 	FORCEINLINE float GetBoostJumpTimeWindow() const { return mBoostJumpTimeWindow; }
 
 	/** Setter for the chute */
-	FORCEINLINE void SetCachedParachute( class AFGParachute* inParachute ) { mCachedParachute = inParachute; } 
-
-	/** Setter for the chute */
 	FORCEINLINE void SetCachedJumpingStilts( class AFGJumpingStilts* inJumpingStilts ) { mCachedJumpingStilts = inJumpingStilts; }
 
 	//////////////////Ladder functions//////////////////
-	bool CanGrabLadder( class UFGLadderComponent* ladder ) const;
+	bool CanGrabLadder( const class UFGLadderComponent* ladder ) const;
 	void StartClimbLadder( class UFGLadderComponent* ladder );
 	void StopClimbLadder();
-	bool IsClimbingOnLadder() const { return CustomMovementMode == (uint8 )ECustomMovementMode::CMM_Ladder; }
+	bool IsClimbingOnLadder() const { return CustomMovementMode == static_cast<uint8>(ECustomMovementMode::CMM_Ladder); }
 	void JumpOffLadder();
 
 	/** @return The ladder we're climbing on; nullptr if not climbing. */
 	UFUNCTION( BlueprintPure, Category = "Ladder" )
 	class UFGLadderComponent* GetOnLadder() const;
-
-
-	//////////////////Hyper Pipe Functions///////////////////////
 	
 	/** IsInHyperPipe
 	 * @return	bool - returns true if we are currently moving in a hyper tube
 	 */
 	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
-	 bool IsInHyperPipe() const { return CustomMovementMode == (uint8 )ECustomMovementMode::CMM_PipeHyper; }
+	bool IsInHyperPipe() const { return CustomMovementMode == static_cast<uint8>(ECustomMovementMode::CMM_PipeHyper); }
 
 	/** IsOnZipline
 	* @return	bool - returns true if we are currently moving on a zipline
 	*/
 	UFUNCTION( BlueprintPure, Category = "Zipline" )
-    bool IsOnZipline() const { return CustomMovementMode == (uint8 )ECustomMovementMode::CMM_Zipline; }
+    bool IsOnZipline() const { return CustomMovementMode == static_cast<uint8>(ECustomMovementMode::CMM_Zipline); }
+
+	/** @return true if the player is currently parachuting */
+	UFUNCTION( BlueprintPure, Category = "Parachute" )
+	bool IsParachuting() const { return CustomMovementMode == static_cast<uint8>(ECustomMovementMode::CMM_Parachute); }
 
 	/** EnterHyperPipe
-	 * Enter a pipe and change movement mode to custom pipe movement. You can not enter pipes directly. You always need a part as an entracne. That is how it's designed atm. Only start parts as well. But we'll see how that changes.
+	 * Enter a pipe and change movement mode to custom pipe movement. You can not enter pipes directly. You always need a part as an entrance. That is how it's designed atm. Only start parts as well. But we'll see how that changes.
 	 * @param	pipe - the pipe start we want to enter
 	 * @return	bool - returns true if we could enter.
 	 */
 	UFUNCTION( BlueprintCallable, Category = "Hyper Tube" )
-	bool EnterPipeHyper( class AFGBuildablePipeHyperPart* pipe );
+	bool EnterPipeHyper( class AFGPipeHyperStart* pipe );
+	
+	bool EnterPipeHyperDirect( UFGPipeConnectionComponentBase* connectionEnteredThrough, const float InitialMinSpeedFactor = 1.0f );
+
+	/** Internal version of EnterPipeHyper, used for sync */
+	bool EnterPipeHyperInternal( UFGPipeConnectionComponentBase* connectionEnteredThrough, const float initialPipeVelocity, const float initialPipeProgress, const float accumulatedDeltaTime );
 
 	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
-	FVector GetPipeTravelDirectionWorld();
+	FVector GetPipeTravelDirectionWorld() const;
 
 	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
-	FRotator GetPipeCharacterTransform(FVector cameraForwardAxis);
+	FRotator GetPipeCharacterTransform(const FVector& cameraForwardAxis) const;
 
-	void PipeHyperForceExit();
+	void PipeHyperForceExit( const bool bRagdollCharacter = true);
 	/** updates if the player wants to slide*/
-	bool WantsToSlide();
+	bool WantsToSlide() const;
 
 	/** Get mBoostJumpVelocityMultiplier */
 	FORCEINLINE float GetBoostJumpVelocityMultiplier() const { return mBoostJumpVelocityMultiplier; }
@@ -275,62 +370,72 @@ public:
 	/** Checks if we still can slide */
 	void UpdateSlideStatus();
 
-	/** Update loop for if we are ziplining */
-	void UpdateZiplineStatus( float dt );
+	// Use this to attempt to climb over an obstacle in front of the player
+	bool AttemptLedgeClimb();
 
-	inline void SetPipeTempMinSpeed( float speed )
+	UFUNCTION()
+	void OnLedgeClimbFinished();
+
+	/** Update loop for if we are zip lining */
+	void UpdateZiplineEffects() const;
+	
+	inline void SetGeneralVelocity( const FVector& velocity )
 	{
-		mPipeData.mPipeTempMinSpeed = speed;
+		Velocity = velocity;
 	}
-	bool SetTravelingPipeHyperActor( AActor* hyperPipeInterfaceActor );
-	inline void SetPipeProgress( float distnace )
-	{
-		mPipeData.mPipeProgress = distnace;
-	}
-	inline void SetPipeVelocity( float speed )
-	{
-		mPipeData.mPipeVelocity = speed;
-	}
-	inline void SetGeneralVelocity( FVector vel)
-	{
-		Velocity = vel;
-	}
-	inline void SetPipeDirectionLast( FVector dir )
-	{
-		mPipeData.mPipeDirectionLast = dir;
-	}
+
 	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
 	inline float GetPipeVelocity() const{ return mPipeData.mPipeVelocity; }
+
 	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
 	inline float GetPipeMinSpeed() const{ return mPipeData.mMinPipeSpeed; }
+
+	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
+	inline float GetTotalTravelDistanceReal() const { return mPipeData.mTotalTravelDistanceReal; }
+
 	inline float GetPipeTempMinSpeed() const{ return mPipeData.mPipeTempMinSpeed; }
 	inline float GetPipeProgress() const{ return mPipeData.mPipeProgress; }
 	inline float GetPipeConstantAcceleration() const{ return mPipeData.mPipeConstantAcceleration; }
 	inline float GetPipeGravityStrength() const{ return mPipeData.mPipeGravityStrength; }
 	inline float GetPipeCurveDamping() const{ return mPipeData.mPipeCurveDamping; }
 	inline float GetPipeFriction() const{ return mPipeData.mPipeFriction; }
-	inline FVector GetVelocity() const{ return Velocity; }
+ 	inline FVector GetVelocity() const{ return Velocity; }
 	inline FVector GetPipeDirectionLast() const{ return mPipeData.mPipeDirectionLast; }
 	inline AActor* GetTravelingPipeHyperActor() const{ return mPipeData.mTravelingPipeHyper; }
+	inline AActor* GetTravelingPipeHyperActorReal() const { return mPipeData.mTravelingPipeHyperReal; }
+
 	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
 	inline FPlayerPipeHyperData& GetPipeHyperDataRef() { return mPipeData; }
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Hyper Tube" )
-	void OnNewTravelPipeSection();
+	/** The next junction we have when traveling a hyper tube */
+	UFUNCTION( BlueprintPure, Category = "Hyper Tube" )
+	FORCEINLINE FFGPendingHyperJunctionInfo GetPendingHyperJunction() const { return mPendingHyperJunction; };
+
+	/** Updates the mPendingJunctionInfo if inside of the hypertube, otherwise invalidates it */
+	void UpdatePendingJunctionInfo();
 
 	const USceneComponent* GetUpdateComponent() const;
 
-	void SetZiplineData( FPlayerZiplineData inData ) { mZiplineData = inData; }
+	void SetZiplineData( const FPlayerZiplineData &inData ) { mZiplineData = inData; }
 
 	UFUNCTION( BlueprintPure, Category = "Zipline" )
-	FORCEINLINE FPlayerZiplineData& GetZiplineDataRef() { return  mZiplineData; }
-
+	FORCEINLINE FPlayerZiplineData& GetZiplineDataRef() { return mZiplineData; }
+	
 	UFUNCTION( BlueprintPure, Category = "Zipline" )
-	float GetZiplineSpeed( bool IsSprinting ) const;
+	const FVector& GetZipLineDirection() const { return mZiplineData.Direction; }
+	
+	UFUNCTION( BlueprintPure, Category = "Zipline" )
+	const float& GetZipLineSpeedMultiplier() const { return mZiplineData.SpeedMultiplier; }
+	
+	bool IsZiplineAttachActorValid() const { return IsValid( mZiplineData.AttachActor ); }
+	
+	UFUNCTION( BlueprintPure, Category = "Zipline" )
+	float GetZiplineSpeed() const;
 
-	void StopZiplineMovement( FVector exitForce = FVector::ZeroVector );
+	void StopZiplineMovement( const FVector& exitForce = FVector::ZeroVector );
 
-	void StartZiplineMovement( AActor* ziplineActor, FVector actorForward );
+	void StartZiplineMovement( AActor* ziplineActor, const FVector& point1, const FVector& point2, const FVector& actorForward );
+	
 protected:
 	// Begin UCharacterMovementComponent
 	virtual void UpdateFromCompressedFlags(uint8 flags) override;
@@ -339,43 +444,42 @@ protected:
 	virtual void PhysCustom( float deltaTime, int32 Iterations ) override;
 
 	void ExecuteDeferredCollisionChange();
-
-		// End UCharacterMovementComponent
+	// End UCharacterMovementComponent
 
 	void SetOnLadder( class UFGLadderComponent* ladder );
+	
+	virtual void PhysFlying( float deltaTime, int32 iterations ) override;
 
-	virtual void PhysFlying( float deltaTime, int32 Iterations ) override;
+	UFUNCTION( Reliable, Server )
+	void Server_LandSafelyFromFlyingState( AFGCharacterPlayer* characterPlayer );
+	
+	void LandSafelyFromFlyingState( AFGCharacterPlayer* characterPlayer );
+	
 private:
 	/** Apply ladder climb physics */
-	void PhysLadder( float deltaTime, int32 iterations );
+	void PhysLadder( const float deltaTime, int32 iterations );
 
 	/** Apply Hyper Tube physics */
-	void PhysPipe( float deltaTime, int32 iterations );
+	void PhysPipe( const float deltaTime );
 
 	/** Apply Zipline physics */
-	void PhysZipline( float deltaTime, int32 iterations );
+	void PhysZipline( const float deltaTime );
 
 	/** Apply Hover physics */
-	void PhysHover( float deltaTime, int32 iterations );
+	void PhysHover( const float deltaTime );
+
+	/** Apply parachute physics */
+	void PhysParachute( const float deltaTime, int32 iterations );
 
 	/** Updates everything that has to do with JetPack */
 	void UpdateJetPack( float deltaSeconds );
 
 	/** Updates everything that has to do with Hookshot */
-	void UpdateHookshot( float deltaSeconds, FVector oldLocation );
+	void UpdateHookshot( const float deltaSeconds, const FVector& oldLocation );
 
 	/** Checks if we still can sprint */
 	void UpdateSprintStatus();
-
-	/** Updates everything that has to do with Parachute */
-	void UpdateParachute( float delta );
-
-	/** Updates everything that has to do with the jumping stilts */
-	void UpdateJumpingStilts( float deltaSeconds );
-
-	/** Updates everything that has to do with the hover pack */
-	void UpdateHoverPack( float deltaSeconds );
-
+	
 	/** Returns true if the player is allowed to sprint */
 	bool CanSprint() const;
 
@@ -388,43 +492,46 @@ private:
 	/** Returns or finds the jet pack */
 	class AFGJetPack* GetCachedJetPack();
 
-	/** Returns or finds the cached hookshot */
+	/** Returns or finds the cached Hookshot */
 	class AFGHookshot* GetCachedHookshot();
-
-	/** Returns or finds the parachute */
-	class AFGParachute* GetCachedParachute();
 
 	/** Returns or finds the jumping stilts */
 	class AFGJumpingStilts* GetCachedJumpingStilts();
 
-	/** Returns or finds the hoverpack */
+	/** Returns or finds the Hoverpack */
 	class AFGHoverPack* GetCachedHoverPack();
 
+	/** Returns the active parachute class CDO */
+	const AFGParachute* GetActiveParachute() const;
+
 	/** Ticks the slide timer so we know for how long the slide has been ongoing */
-	void TickSlide( float delta );
+	void TickSlide( const float delta );
+
+	/** Used by AttemptLedgeClimb in order to move the character up over a duration. */
+	bool StartLedgeClimb( const float duration, const float speed );
+
+	/** Used to stop ledge climbing. */
+	void StopLedgeClimb( const bool interrupt );
+	
 public:
 	/** Timestamp of last time we jumped */
 	UPROPERTY( BlueprintReadOnly, Category = "Jump" )
 	float mLastJumpTimeStamp;
-
-	/** If true, try to parachuting on next update. If false, try to stop parachuting on next update. */
-	UPROPERTY( BlueprintReadOnly, Category = "JetPack" )
-	uint32 mIsParachuting : 1;
-
+	
 	/** The speed at which a character climbs ladders */
-	UPROPERTY( EditDefaultsOnly, Category = "Sprint" )
+	UPROPERTY( BlueprintReadOnly, Category = "Sprint" )
 	float mClimbSpeed;
 
 	/** The speed at witch a character sprints */
-	UPROPERTY( EditDefaultsOnly, BlueprintReadWrite, Category = "Sprint" )//ReadWrite is only to enable blueprint prototoyping of shit.
+	UPROPERTY( EditDefaultsOnly, BlueprintReadWrite, Category = "Sprint" )//ReadWrite is only to enable blueprint prototyping of shit.
 	float mMaxSprintSpeed;
-
-	/** True if the player wants to sprint */
+	
+	/** True if the player wants to sprint. */
 	bool mWantsToSprint;
 
-	/** Keeps is the player sprinting this update or not? */
-	bool mIsSprinting;
-
+	/** True if the player wants to sprint while on Zipline. */
+	bool mWantsToSprintOnZipline;
+	
 	/** Keeps is the player sprinting this update or not? */
 	bool mIsSliding;
 
@@ -446,16 +553,20 @@ public:
 	UPROPERTY()
 	class AFGCharacterPlayer* mFGCharacterOwner;
 
+	UPROPERTY( VisibleInstanceOnly, Category = "Movement|Parachute" )
+	class UFGParachuteSettings* mParachuteSettings;
 private:
 	friend class FSavedMove_FGMovement;
 
+	/** Keeps is the player sprinting this update or not? */
+	bool mIsSprinting;
+
+	/** Holds if sprint toggle is on from FGCharacterPlayer. Updates every time SetWantsToSprint() is called.*/
+	bool mHoldToSprint;
+	
 	/** A cached instance of the equipment that issued jet pack thrust */
 	UPROPERTY()
 	class AFGJetPack* mCachedJetPack;
-
-	/** A cached instance of the equipment that issued parachuting */
-	UPROPERTY()
-	class AFGParachute* mCachedParachute;
 
 	/** A cached instance of the equipment that set our hookshot location */
 	UPROPERTY()
@@ -482,6 +593,9 @@ private:
 
 	UPROPERTY(EditAnywhere, meta = ( ShowOnlyInnerProperties ) )
 	FPlayerPipeHyperData mPipeData;
+
+	UPROPERTY()
+	FFGPendingHyperJunctionInfo mPendingHyperJunction;
 
 	/** Get velocity from curve when sliding */
 	UPROPERTY( EditDefaultsOnly, Category = "Movement" )
@@ -519,23 +633,63 @@ private:
 	/* How long time after a slide a jump can be input and be counted as a boost jump*/
 	UPROPERTY( EditDefaultsOnly, Category = "Movement" )
 	float mBoostJumpTimeWindow;
+	
+	// TODO: PROTOTYPE
+	/** Whether or not to enabled the vault / ledge climb prototype. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Vault" )
+	bool mEnableVaultPrototype;
+	
+	/** How far forward we should sweep to check if vaulting is possible. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Vault" )
+	float mVaultSweepDistance;
+
+	/** How high something can be for us to vault over it. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Vault" )
+	float mVaultHeightThreshold;
+
+	/** How much forward velocity to add when vaulting. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Vault" )
+	float mVaultForwardVelocity;
+
+	/** How much vertical velocity to add when vaulting. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Vault" )
+	float mVaultVerticalVelocity;
+
+	/** How high something can be for us to ledge climb over it, should be higher than vault height limit. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Vault" )
+	float mLedgeClimbHeightThreshold;
+
+	FTimerHandle mLedgeClimbTimerHandle;
+
+	float mCurrentLedgeClimbingSpeed;
+	
+	bool mIsLedgeClimbing;
+	bool mIsVaulting;
 
 	EDeferredCollisionChange mDeferredCollisionAction = EDeferredCollisionChange::DCC_None;
 
-	UPROPERTY(EditAnywhere, meta = ( ShowOnlyInnerProperties ) )
+	UPROPERTY( EditAnywhere, meta = ( ShowOnlyInnerProperties ) )
     FPlayerZiplineData mZiplineData;
-
+	
 	/* Base speed for moving straight on zipline */
 	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline" )
 	float mZiplineSpeed;
 
-	/* The speed of which the character corrects its position when ziplining. */
+	/* Sprint speed for moving straight on zipline */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline" )
+	float mZiplineSprintSpeed;
+	
+	/* The speed of which the character corrects its position when zip lining. */
 	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline" )
 	float mZiplineCorrectionSpeedMultiplier;
 
-	/* How fast we interpolate to max speed when ziplining */
+	/* How fast we interpolate to max speed when zip lining. */
 	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline" )
 	float mZiplineVelocityInterpolationSpeed;
+
+	/* How fast we interpolate to max speed when zip lining while sprinting. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline" )
+	float mZiplineVelocityInterpolationSprintSpeed;
 	
 	/* Speed multiplier used when going upwards on zipline */
 	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline" )
@@ -544,16 +698,34 @@ private:
 	/* Speed multiplier used when going downwards on zipline */
 	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline" )
 	float mZiplineSpeedMultiplierDown;
+
+	/* When sprinting on zipline we use the normal interpolation speed until we reach this percentage of the normal zipline velocity. */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline", meta=(ClampMin=0.0f, ClampMax=1.0f, UIMin=0.0f, UIMax=1.0f ))
+	float mZiplineSprintSettingsCutoff;
+
+	/* When hitting the end of a zipline, this is the maximum allowed angle of the new wire we keep ziplining on. (Degrees) */
+	UPROPERTY( EditDefaultsOnly, Category = "Movement|Zipline", meta=(ClampMin=0.0f, ClampMax=180.0f, UIMin=0.0f, UIMax=180.0f ) )
+	float mZiplineContinuousTravelMaxAngle;
+
+	/* Vertical speed when flying. */
+	UPROPERTY( EditDefaultsOnly, Category = "Character Movement: Flying" )
+	float mVerticalFlyingSpeed;
+
+	/* Vertical speed when flying and sprinting. */
+	UPROPERTY( EditDefaultsOnly, Category = "Character Movement: Flying" )
+	float mVerticalFlyingSprintSpeed;
+
+	/* Speed when flying and sprinting. */
+	UPROPERTY( EditDefaultsOnly, Category = "Character Movement: Flying" )
+	float mMaxFlySprintSpeed;
 	
 	//Cheat
 	public:
 	bool mCheatGhost : 1;
-	float CheatFlySpeedVertical;
-	void ZeroOutFallVelocity();
 	//end Cheat
 };
 
-class FSavedMove_FGMovement : public FSavedMove_Character
+class FSavedMove_FGMovement final : public FSavedMove_Character
 {
 	typedef FSavedMove_Character Super;
 public:
@@ -582,18 +754,22 @@ public:
 
 	uint8 mSavedIsPressingJump : 1;
 
+	uint8 mSavedWantsToSprintOnZipline : 1;
+	
 	FVector mSavedHookLocation;
 
 	float mPipeMoveProgress;
 	float mPipeMoveVel;
 	float mPipeMoveTime;
 	AActor* mPipeMovePipe = nullptr;
+	FFGPipeHyperDynamicPipeData mPipeMovePipeData;
+	TSoftObjectPtr<UFGParachuteSettings> mParachuteSettings;
 };
 
-class FNetworkPredictionData_Client_FGMovement : public FNetworkPredictionData_Client_Character
+class FNetworkPredictionData_Client_FGMovement final : public FNetworkPredictionData_Client_Character
 {
 public:
-	FNetworkPredictionData_Client_FGMovement(const UCharacterMovementComponent& clientMovement);
+	explicit FNetworkPredictionData_Client_FGMovement(const UCharacterMovementComponent& clientMovement);
 
 	typedef FNetworkPredictionData_Client_Character Super;
 

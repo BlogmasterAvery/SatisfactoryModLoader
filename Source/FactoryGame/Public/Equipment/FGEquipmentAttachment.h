@@ -19,11 +19,18 @@ public:
 
 	// Begin AActor interface
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	// End AActor interface
 
 	/** Attaches this attachment to a character */
 	void Attach( class AFGCharacterPlayer* character );
 
+	/* Updates primitive values on all UPrimitive components.*/
+	void UpdatePrimitiveColors();
+
+	UFUNCTION()
+    void OnColorUpdate(int32 index);
+	
 	/** Event called when this equipment has been attached */
 	UFUNCTION( BlueprintNativeEvent, Category = "Equipment|Attachment" )
 	void OnAttach();
@@ -73,6 +80,10 @@ public:
 
 	/** Get the back animation to play on the player */
 	FORCEINLINE EBackEquipment GetBackAnimation() const{ return mBackAnimation; }
+
+	/** Called when the camera mode of the player having the equipment changes to third or first person */
+	UFUNCTION( BlueprintNativeEvent, Category = "Equipment" )
+	void OnCameraModeChanged( ECameraMode newCameraMode );
 protected:
 	/** @return character this is attached to; nullptr if not attached. */
 	UFUNCTION( BlueprintPure, Category = "Equipment|Attachment" )

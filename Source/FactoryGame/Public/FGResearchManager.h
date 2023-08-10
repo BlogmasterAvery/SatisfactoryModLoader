@@ -24,6 +24,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FResearchCompletedDelegate, TSubcla
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FResearchStateChangedDelegate, EResearchState, researchState );
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FResearchResultsClaimed, TSubclassOf<class UFGSchematic>, schematic );
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FResearchTreeUnlocked, TSubclassOf<class UFGResearchTree>, researchTree );
+DECLARE_MULTICAST_DELEGATE_OneParam( FOnPopulateResearchTreeListDelegate, TArray< TSubclassOf<class UFGResearchTree> >&);
 
 /**
 * Contains data about the research conducted
@@ -127,6 +128,8 @@ public:
 	UPROPERTY( BlueprintAssignable, Category = "Events|Research", DisplayName = "OnResearchTreeUnlocked" )
 	FResearchTreeUnlocked ResearchTreeUnlockedDelegate;
 
+	/** Called after PopulateResearchTreeList has been called and vanilla content has been registered */
+	FOnPopulateResearchTreeListDelegate PopulateResearchTreeListDelegate;
 public:
 	AFGResearchManager();
 
@@ -222,6 +225,10 @@ public:
 	/** Unlock a research tree */
 	void UnlockResearchTree( TSubclassOf<class UFGResearchTree> researchTree );
 
+	/** Returns if all nodes in the given research tree are researched */
+	UFUNCTION( BlueprintPure, Category = "Research" )
+	static bool IsTreeFullyResearched( UObject* worldContextObject, TSubclassOf<class UFGResearchTree> reserachTree, TSubclassOf< class UFGSchematic > schematicToIgnore );
+
 	/** Checks if the system has activated yet */
 	UFUNCTION( BlueprintPure, Category = "Research" )
 	FORCEINLINE bool IsActivated() const { return mIsActivated; }
@@ -229,6 +236,10 @@ public:
 	/** Activates subsystem */
 	UFUNCTION( BlueprintCallable, Category = "Research" )
 	void SetActivated( bool inActivate ) { mIsActivated = inActivate; }
+
+	/**  Unlocks all research trees. Used to show the content of all research trees but don't give any of the schematics in the tree */
+	void UnlockAllResearchTrees();
+	
 protected:
 	UFUNCTION()
 	void OnRep_OngoingResearch();
@@ -288,6 +299,8 @@ private:
 
 	bool AreResearchTreeUnlockDependeciesMet( TSubclassOf <UFGResearchTree> inClass );
 
+	void SubmitResearchCompletedTelemetry( const TArray< TSubclassOf< class UFGSchematic > >& allSchematics, TSubclassOf< UFGSchematic > chosenSchematic ) const;
+	
 	UPROPERTY( SaveGame, Replicated )
 	bool mIsActivated;
 

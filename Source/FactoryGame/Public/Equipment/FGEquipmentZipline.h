@@ -11,7 +11,7 @@
  * 
  */
 UCLASS()
-class FACTORYGAME_API AFGEquipmentZipline : public AFGEquipment
+class FACTORYGAME_API AFGEquipmentZipline final: public AFGEquipment
 {
 	GENERATED_BODY()
 public:
@@ -19,19 +19,8 @@ public:
 	
 	// Begin AFGEquipment interface
     virtual void AddEquipmentActionBindings() override;
-    virtual void DoDefaultPrimaryFire_Native() override;
 	virtual void UnEquip() override;
 	// End AFGEquipment interface
-	
-	/** Called on the owner, client or server but not both. */
-	void OnDefaultPrimaryFireReleased();
-	
-	/** Only server implementation of primary fire */
-	UFUNCTION( Server, Reliable, WithValidation )
-    void Server_DefaultPrimaryFireReleased();
-
-	/** Cancel the zipline movement */
-    void DoDefaultPrimaryFireReleased_Native();
 	
 	virtual void Tick( float delta ) override;
 
@@ -52,19 +41,34 @@ public:
 	/** Jump exit the zipline */
 	UFUNCTION()
     void JumpExit();
-	
-	void OnCrouchPressed();
-	void OnCrouchReleased();
 
-	void OnJumpPressed();
+	/** Input actions */
+	void Input_Crouch( const FInputActionValue& actionValue );
+	void Input_Jump( const FInputActionValue& actionValue );
+
+	UFUNCTION( BlueprintImplementableEvent, Category = "Zipline" )
+	void OnZiplineSprintStatusChanged( bool sprint );
 
 	/** Called during tick, tries to grab onto a wire if mWantToGrab is set  */
 	void TryToGrab();
+
+	bool CanGrab( AActor* attachActor, const FVector& point1, const FVector& point2 ) const;
+
+protected:
+	virtual void HandleDefaultEquipmentActionEvent( EDefaultEquipmentAction action, EDefaultEquipmentActionEvent actionEvent ) override;
+
+	/** Called whenever our "Want to grab" value changes. */
+	UFUNCTION( BlueprintImplementableEvent, Category = "Zipline" )
+	void OnWantToGrabChanged( bool newWantToGrab );
+	
+	void SetWantsToGrab( bool wantToGrab );
+
+private:
+	/** Used to make noise for when the zipline is active. */
+	UFUNCTION()
+	void MakeActiveNoise();
 	
 private:
-	/** Set if we dropped from a zipline so that we don't call UnCrouch when button is released */
-	bool mDidDrop;
-
 	/** Set if we should try to grab a zipline */
 	bool mWantToGrab;
 
@@ -72,7 +76,7 @@ private:
 	UPROPERTY( EditDefaultsOnly, Category = "Zipline" )
 	float mZiplineJumpLaunchVelocity;
 
-	/** Max allowed angle on wire for ziplining. Sine value of the angle needs to be lower than this in order to be valid for zipline. 0-1 value. */
+	/** Max allowed angle on wire for zip-lining. Sine value of the angle needs to be lower than this in order to be valid for zipline. 0-1 value. */
 	UPROPERTY( EditDefaultsOnly, Category = "Zipline", meta=( ClampMin=0, UIMin=0, ClampMax=1, UIMax=1 ) )
 	float mMaxZiplineAngle;
 
@@ -92,6 +96,16 @@ private:
 	UPROPERTY( EditDefaultsOnly, Category = "Zipline" )
 	bool mVisualizeTraceDistance;
 
+	/** The noise to make when the zipline is active. */
+    UPROPERTY( EditDefaultsOnly, Category = "Zipline" )
+    TSubclassOf< class UFGNoise > mActiveNoise;
+
+    /** How often to make the noise (in seconds) while the zipline is active. */
+    UPROPERTY( EditDefaultsOnly, Category = "Zipline" )
+    float mActiveNoiseFrequency;
+
+    FTimerHandle mActiveNoiseTimerHandle;
+	
 	/** Duration we need to wait before allowing the player to reattach zipline */
 	UPROPERTY( EditDefaultsOnly, Category = "Zipline" )
 	float mZiplineReattachCooldown;

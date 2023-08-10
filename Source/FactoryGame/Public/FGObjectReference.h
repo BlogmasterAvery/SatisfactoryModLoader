@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "FactoryGame.h"
 #include "Templates/TypeHash.h"
 
-struct FObjectRedirect
+struct FACTORYGAME_API FObjectRedirect
 {
 	/**
 	 * Creates a redirector
@@ -20,7 +19,7 @@ struct FObjectRedirect
 };
 
 /** Level agnostic object reference */
-struct FObjectReferenceDisc
+struct FACTORYGAME_API FObjectReferenceDisc
 {
 	// Name of the level we reside in, if empty, PathName is a absolute path
 	FString LevelName;
@@ -31,7 +30,7 @@ struct FObjectReferenceDisc
 	FObjectReferenceDisc();
 
 	/** Setups reference from a object  */
-	FObjectReferenceDisc( UObject* obj );
+	FObjectReferenceDisc( const UObject* obj );
 
 	/** If returning true, then this is a nullptr */
 	bool IsNullptr() const;
@@ -65,8 +64,19 @@ struct FObjectReferenceDisc
 		return Cast<T>( Resolve( world ) );
 	}
 
+	/**
+	* Will attempt to resolve an object that could not be found using a new path. 
+	* Eg. When an object is moved from a persistent level to a streaming level.
+	*
+	* @param world - the world this object lives in
+	* @param level - the "new" level to test as the path
+	*/
+	AActor* TryResolveActorWithNewLevel( UWorld* world, ULevel* newLevel );
+
+	FObjectReferenceDisc MigrateToNewLevel( const FString& levelName ) const;
+
 	/** Set the reference to a object */
-	void Set( UObject* obj );
+	void Set( const UObject* obj );
 
 	/** Parse out the name of the object from the relative path */
 	void ParseObjectName( FString& out_objName ) const;
@@ -74,11 +84,16 @@ struct FObjectReferenceDisc
 	/** Parse out the name of the object from the relative path */
 	void ParseObjectNameAndPath( FString& out_objPath, FString& out_objName ) const;
 
+	/** Returns the sub-object path within (eg if PathName==Persistent_Level:PersistentLevel.Actor1 then it returns PersistentLevel.Actor1 */
+	FString GetSubPathString() const;
+
 	/** Get the relative path between the level the object resides in */
-	static void GetRelativePath( UObject* obj, FString& out_pathName );
+	static void GetRelativePath( const UObject* obj, FString& out_pathName );
 
 	/** Find the level a object resides in */
-	static ULevel* FindOuterLevel( UObject* obj );
+	static const ULevel* FindOuterLevel( const UObject* obj );
+
+	static const class UWorldPartitionRuntimeCell* FindWorldPartitionCell( const UWorld* world, const FString& levelName );
 
 	/** Find the level this actor/object resides in with redirector support */
 	ULevel* FindLevel( UWorld* world ) const;
@@ -114,16 +129,22 @@ struct FObjectReferenceDisc
 	/** For comparisons of references */
 	FORCEINLINE bool operator ==( const FObjectReferenceDisc& other ) const { return LevelName == other.LevelName && PathName == other.PathName; }
 
+	bool BlueprintAttemptAutomaticRedirect();
+	
+public:
+	static bool IsModdingModuleLoaded;
+	static bool ForceUseRedirects; // Forces the references to use redirected paths (used when loading blueprints as all objects will be redirected)
+	int32 BlueprintRedirectCount = 0;
+	
+private:
+	friend class FArchiveObjectTOCProxy;
+	friend class FBlueprintArchiveObjectTOCProxy;
+	friend UObject* InternalResolve( const FObjectReferenceDisc& reference, UWorld* world, UObject* searchOuter, UObject* outer );
+
 	/**
 	 * Add a redirector from a object name to a new object name
 	 */
 	static void AddRedirector( const FString& source, const FString& destination );
-
-public:
-	static bool IsModdingModuleLoaded;
-
-private:
-	friend UObject* InternalResolve( const FObjectReferenceDisc& reference, UWorld* world, UObject* searchOuter, UObject* outer );
 
 	/**
 	 * Redirects done during this latest session

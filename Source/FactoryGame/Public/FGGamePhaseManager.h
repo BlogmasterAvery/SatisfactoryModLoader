@@ -96,11 +96,20 @@ public:
 	UFUNCTION( BlueprintPure, Category = "GamePhase", DisplayName = "GetGamePhaseManager", Meta = ( DefaultToSelf = "worldContext" ) )
 	static AFGGamePhaseManager* Get( UObject* worldContext );
 
+	/** Gets the default game phase manager object. Added to get data in main menu where we don't have a game phase manager yet.
+	 *	USE WITH CAUTION */
+	UFUNCTION( BlueprintPure, Category = "GamePhase", DisplayName = "GetDefaultGamePhaseManager" )
+	static AFGGamePhaseManager* GetDefault();
+
 public:
 	AFGGamePhaseManager();
 
+	// Begin Actor
 	virtual void GetLifetimeReplicatedProps( TArray<FLifetimeProperty>& OutLifetimeProps ) const override;
-
+	virtual void BeginPlay() override;
+	virtual void EndPlay( const EEndPlayReason::Type endPlayReason ) override;
+	// End Actor
+	
 	// Begin IFGSaveInterface
 	virtual void PreSaveGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
 	virtual void PostSaveGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
@@ -116,6 +125,12 @@ public:
 	/** Updates the game phase number. Must be called from authority to take effect. */
 	UFUNCTION( BlueprintCallable, Category = "Progression" )
 	void SetGamePhase( EGamePhase newPhase );
+
+	/** Set the game phase corresponding to the given tier */
+	void SetGamePhaseForTier( int32 tier );
+
+	/** Gives the last relevant game phase */
+	void UnlockAllGamePhases();
 
 	/** gets the game phase number */
 	UFUNCTION( BlueprintPure, Category = "Progression" )
@@ -149,6 +164,14 @@ public:
 	UFUNCTION( BlueprintCallable, Category = "Progression" )
 	int32 PayOffOnGamePhase( FItemAmount payOff, EGamePhase gamePhase );
 
+	/** Returns the current game phase and all game phases after that that is relevant for the current version of the game */
+	UFUNCTION( BlueprintCallable, Category = "Progression" )
+	void GetCurrentAndRemainingGamePhases( TArray<TEnumAsByte<EGamePhase>>& out_gamePhases );
+
+	/** Returns last tech tier of the given game phase */
+	UFUNCTION( BlueprintPure, Category = "Progression" )
+	int32 GetLastTechTierForGamePhase( EGamePhase phase ) const;
+
 	/** Rep notify for mGamePhase */
 	UFUNCTION()
 	void OnRep_GamePhase();
@@ -163,8 +186,13 @@ public:
 	/** Resets the game phases to the defaults. Used for resetting progression for testing. */
 	void ResetGamePhase();
 
-	int32 GetLastTechTierForGamePhase(EGamePhase phase) const;
 
+
+private:
+	UFUNCTION()
+	void SubmitGamePhaseTelemetry( EGamePhase phase );
+	
+public:
 	/** Broadcast a notification when we pay something of on a game phase*/
 	UPROPERTY( BlueprintAssignable, Category = "Progression" )
 	FOnPayOffOnGamePhase mOnPayOffOnGamePhase;

@@ -87,6 +87,10 @@ public:
 	UFUNCTION( BlueprintCallable, Category = "Minimap Height", meta = ( CallInEditor = "true" ) )
 	void ExportHeightData();
 
+	/** This function traces all over the level to find height info that can be used when we draw the minimap */
+	UFUNCTION( BlueprintCallable, Category = "Minimap Height", meta = ( CallInEditor = "true" ) )
+	void TestTrace();
+
 private:
 
 	void CalculateHeightData( FVector upperLeftWorld, const FVector xStepVect, const FVector yStepVect, const TArray< AActor* >& ignoreActors, FFGHeightData& out_terrainHeightData, FFGHeightData& out_waterHeightData, FFGHeightData& out_foliageHeightData );
@@ -114,10 +118,6 @@ public:
 	UPROPERTY( EditInstanceOnly, Category = "Minimap Height" )
 	int32 mLayersForTerrain;
 
-	/** Show depth on the water map */
-	UPROPERTY( EditInstanceOnly, Category = "Minimap Height" )
-	bool mShowDepthOnWaterMap;
-
 	/** The max water depth considered, everything deeper than this will be clamped to this value */
 	UPROPERTY( EditInstanceOnly, Category = "Minimap Height" )
 	float mWaterMaxDepth = 1000.0f;
@@ -128,6 +128,11 @@ public:
 
 	UPROPERTY( EditInstanceOnly, Category = "Minimap Height" )
 	int32 mHeightDataResolution;
+
+	/** What collision channel should we trace against when generating the map */
+	UPROPERTY( EditInstanceOnly, Category = "Minimap Height" )
+	TEnumAsByte< ECollisionChannel > mCollisionChannel;
+	
 
 
 #endif

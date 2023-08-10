@@ -22,6 +22,8 @@ float UFGBlueprintFunctionLibrary::RoundFloatWithPrecision(float value, int32 Ma
 FName UFGBlueprintFunctionLibrary::GetComponentFlagSoftLanding(){ return FName(); }
 bool UFGBlueprintFunctionLibrary::IsInAlwaysLoadedLevel(AActor* actor){ return bool(); }
 UFGSignificanceManager* UFGBlueprintFunctionLibrary::GetSignificanceManager(UWorld* InWorld){ return nullptr; }
+void UFGBlueprintFunctionLibrary::AddStaticSignificance(UObject* WorldContextObject, UObject* Object){ }
+void UFGBlueprintFunctionLibrary::RemoveStaticSignificance(UObject* WorldContextObject, UObject* Object){ }
 void UFGBlueprintFunctionLibrary::AddGenericTickObjectToSignificanceManager(UObject* WorldContextObject, UObject* obj){ }
 void UFGBlueprintFunctionLibrary::RemoveGenericTickObjectFromSignificanceManager(UObject* WorldContextObject, UObject* obj){ }
 void UFGBlueprintFunctionLibrary::AddFactoryObjectToSignificanceManager(UObject* WorldContextObject, UObject* obj){ }
@@ -53,6 +55,7 @@ void UFGBlueprintFunctionLibrary::GetAvailableRecipesForMaterialDescriptorInSubC
 																	 TArray< TSubclassOf<  UFGRecipe > >& out_recipes){ }
 TArray< TSubclassOf< class UFGCategory > > UFGBlueprintFunctionLibrary::GetAvailableSubCategoriesForCategory(UObject* worldContext, TSubclassOf< UFGCategory > category, TSubclassOf<  UFGCategory > outputSubCategoryClass){ return TArray<TSubclassOf<class UFGCategory> >(); }
 void UFGBlueprintFunctionLibrary::GetSubCategoriesForSchematicCategory(UObject* worldContext, TSubclassOf<  UFGSchematicCategory > category,  TArray< TSubclassOf<  UFGSchematicCategory > >& out_subCategories){ }
+void UFGBlueprintFunctionLibrary::GetVisibleSubCategoriesForSchematicCategory(UObject* worldContext, TSubclassOf<  UFGSchematicCategory > category, ESchematicType schematicType, TArray< TSubclassOf<  UFGSchematicCategory > >& out_subCategories){ }
 TArray< TSubclassOf< UFGCategory > > UFGBlueprintFunctionLibrary::GetAllCategoriesFromRecipes(TArray< TSubclassOf<  UFGRecipe > > recipes, TSubclassOf<  UFGCategory > outputCategoryClass){ return TArray<TSubclassOf<UFGCategory> >(); }
 TSubclassOf< class UFGQuickSwitchGroup > UFGBlueprintFunctionLibrary::GetQuickSwitchGroupFromRecipe(TSubclassOf<  UFGRecipe > recipe){ return TSubclassOf<class UFGQuickSwitchGroup>(); }
 void UFGBlueprintFunctionLibrary::GetMatchingQuickSwitchGroupRecipes(TSubclassOf<  UFGRecipe > recipe, TArray < TSubclassOf<  UFGRecipe > > recipesToMatchAgainst, TArray< TSubclassOf<  UFGRecipe > >& out_recipes){ }
@@ -71,7 +74,8 @@ void UFGBlueprintFunctionLibrary::UpdateHotbarShortcutsForSpecifiedMaterialDescr
 bool UFGBlueprintFunctionLibrary::IsLocationNearABase(const UObject* worldContext, FVector inLocation, float closeDistance){ return bool(); }
 bool UFGBlueprintFunctionLibrary::IsLocationNearABaseFromResult(const UObject* worldContext, FVector inLocation, float closeDistance, const TArray< FOverlapResult >& Results){ return bool(); }
 void UFGBlueprintFunctionLibrary::CreateSessionAndTravelToMap(APlayerController* player, const FString& mapName, const FString& options, const FString& sessionName, TEnumAsByte<ESessionVisibility> sessionVisibility){ }
-void UFGBlueprintFunctionLibrary::CreateSessionAndTravelToMapWithStartingLocation(APlayerController* player, const FString& mapName, const FString& startingLocation, const FString& sessionName, TEnumAsByte<ESessionVisibility> sessionVisibility){ }
+void UFGBlueprintFunctionLibrary::CreateSessionAndTravelToMapWithStartingLocation(APlayerController* player, const FString& mapName, const FString& startingLocation, const FString& sessionName, TEnumAsByte<ESessionVisibility> sessionVisibility, bool skipOnboarding){ }
+void UFGBlueprintFunctionLibrary::LoadSaveFile(TScriptInterface<IFGSaveManagerInterface> saveManager, const FSaveHeader& saveGame,  APlayerController* player, bool enableAdvancedGameSettings){ }
 void UFGBlueprintFunctionLibrary::TravelToMainMenu(APlayerController* playerController){ }
 void UFGBlueprintFunctionLibrary::SendLocalPlayerToMainMenu(UWorld* world){ }
 FString UFGBlueprintFunctionLibrary::LinearColorToHex(FLinearColor inColor){ return FString(); }
@@ -90,6 +94,8 @@ bool UFGBlueprintFunctionLibrary::EqualEqual_FrameTimeFrameTime(FFrameTime frame
 bool UFGBlueprintFunctionLibrary::NotEqual_FrameTimeFrameTime(FFrameTime frameTimeA, FFrameTime frameTimeB){ return bool(); }
 FFrameTime UFGBlueprintFunctionLibrary::Conv_IntToFrameTime(int32 frameCount){ return FFrameTime(); }
 int32 UFGBlueprintFunctionLibrary::Conv_FrameTimeToInt(FFrameTime frameTime){ return int32(); }
+bool UFGBlueprintFunctionLibrary::EqualEqual_FMapMarkerFMapMarker(const FMapMarker& mapMarkerA, const FMapMarker& mapMarkerB){ return bool(); }
+int32 UFGBlueprintFunctionLibrary::GetMapMarkerID(const FMapMarker& mapMarker,  bool& out_hasValidID){ return int32(); }
 bool UFGBlueprintFunctionLibrary::EvaluateMathExpression(const FString& expression,  FText& out_Result){ return bool(); }
 FString UFGBlueprintFunctionLibrary::SecondsToTimeString(float inSeconds){ return FString(); }
 FString UFGBlueprintFunctionLibrary::Conv_IntToString(int64 InInt){ return FString(); }
@@ -99,8 +105,18 @@ void UFGBlueprintFunctionLibrary::SetMetadataTag(UObject* object, FName tag, con
 FString UFGBlueprintFunctionLibrary::GetMetadataTag(UObject* object, FName tag){ return FString(); }
 bool UFGBlueprintFunctionLibrary::FileLoadString(FString AbsoluteFilePath, FString& String){ return bool(); }
 FText UFGBlueprintFunctionLibrary::CutTextByPixelOffset(const FText& text, const FSlateFontInfo& inFontInfo, const int32 horizontalOffset, const FString& suffix){ return FText(); }
-TArray< class AActor* > UFGBlueprintFunctionLibrary::GetActorsInRadius(UObject* WorldContextObject, FVector inLocation,  float inRadius, TSubclassOf< AActor > inActorClass){ return TArray<class AActor*>(); }
+void UFGBlueprintFunctionLibrary::GetActorsInRadius(UObject* WorldContextObject, FVector inLocation,  float inRadius, TSubclassOf< AActor > inActorClass, TArray<  AActor* >& result){ }
 bool UFGBlueprintFunctionLibrary::IsWidgetUnderCursor( ULocalPlayer* localPlayer,  UUserWidget* widget){ return bool(); }
+UObject* UFGBlueprintFunctionLibrary::Conv_SessionSaveStructToObject(FSessionSaveStruct inSessionSaveStruct){ return nullptr; }
+UObject* UFGBlueprintFunctionLibrary::Conv_SaveHeaderToObject(FSaveHeader inSaveHeader){ return nullptr; }
+void UFGBlueprintFunctionLibrary::WaitForValidSubsystems(const UObject* WorldContextObject,  FLatentActionInfo LatentInfo){ }
+void UFGBlueprintFunctionLibrary::WaitForFGHud(const UObject* WorldContextObject,  FLatentActionInfo LatentInfo,  AFGHUD*& out_HUD){ }
+void UFGBlueprintFunctionLibrary::WaitForGameUI(const UObject* WorldContextObject,  FLatentActionInfo LatentInfo,  UFGGameUI*& out_GameUI){ }
+void UFGBlueprintFunctionLibrary::WaitForCondition(const UObject* WorldContextObject,  FLatentActionInfo LatentInfo, const FLatentActionPredicate& Predicate, bool ExecuteOnDedicatedServer){ }
+void UFGBlueprintFunctionLibrary::GetAllPickupableItemDescriptors(UObject* WorldContextObject, TArray< TSubclassOf<  UFGItemDescriptor > >& out_itemDescriptors){ }
+bool UFGBlueprintFunctionLibrary::ShouldShowUnstableSaveVersionWarning(){ return bool(); }
+bool UFGBlueprintFunctionLibrary::ShouldShowOfflineSessionWarning(){ return bool(); }
+FString UFGBlueprintFunctionLibrary::BuildSourceString(const FText& inText){ return FString(); }
 void UFGBlueprintFunctionLibrary::BreakCustomizationColorSlot(const  FFactoryCustomizationColorSlot& customData, FLinearColor& primaryColor, FLinearColor& secondaryColor, float& metallic, float& roughness){ }
 FFactoryCustomizationColorSlot UFGBlueprintFunctionLibrary::MakeCustomizationColorSlot(FLinearColor primaryColor, FLinearColor secondaryColor, float metallic, float roughness){ return FFactoryCustomizationColorSlot(); }
 UTexture2D* UFGBlueprintFunctionLibrary::GetIconForCustomizationDesc(const TSubclassOf<  UFGFactoryCustomizationDescriptor > customizationDesc){ return nullptr; }
@@ -117,3 +133,10 @@ void UFGBlueprintFunctionLibrary::ApplySkinDataToMeshArray(TArray< UMeshComponen
 float UFGBlueprintFunctionLibrary::GetPrimitiveDataFromIndex(int32 Index, UPrimitiveComponent* Component){ return float(); }
 float UFGBlueprintFunctionLibrary::GetPrimitiveDefaultDataFromIndex(int32 Index, UPrimitiveComponent* Component){ return float(); }
 void UFGBlueprintFunctionLibrary::CSS_SetAnimationAsset(USkeletalMeshComponent* Comp, UAnimationAsset* AnimationAsset){ }
+int64 UFGBlueprintFunctionLibrary::GetFrameNumber(){ return int64(); }
+float UFGBlueprintFunctionLibrary::FindClosestPlayerSq(AActor* source){ return float(); }
+void UFGBlueprintFunctionLibrary::SetWaterCollisionSettings(UStaticMeshComponent* Target){ }
+bool UFGBlueprintFunctionLibrary::SegmentIntersection(const FVector& SegmentBeginA, const FVector& SegmentEndA, const FVector& SegmentBeginB, const FVector& SegmentEndB){ return bool(); }
+FString UFGBlueprintFunctionLibrary::GetActorGridStringRuntTime(AActor* InActor){ return FString(); }
+FVector UFGBlueprintFunctionLibrary::GetEditorCameraLocation(){ return FVector(); }
+void UFGBlueprintFunctionLibrary::ED_SetMinDrawDistance(UStaticMeshComponent* Comp, float Distance){ }

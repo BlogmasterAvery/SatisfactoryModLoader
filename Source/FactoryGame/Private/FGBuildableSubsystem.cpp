@@ -5,7 +5,7 @@
 #if STATS
 #endif 
 AFGBuildableSubsystem::AFGBuildableSubsystem() : Super() {
-	this->mDistanceConsideredClose = 30000.0;
+	this->mDistanceConsideredClose = 15000.0;
 	this->mNumFactoriesNeededForCloseCheck = 5;
 	this->mBuildableInstancesActor = nullptr;
 	this->mFactoryLegInstancesActor = nullptr;
@@ -49,7 +49,6 @@ AFGBuildableSubsystem::AFGBuildableSubsystem() : Super() {
 	this->mFactoryOptimizationEnabled = true;
 	this->mReplayEffecTimeDilation = 0.1;
 	this->mReplayEffectTimerDefault = 0.5;
-	this->mDefaultFactoryMaterial = nullptr;
 	this->mFactoryTickFunction.TickGroup = ETickingGroup::TG_PrePhysics;
 	this->mFactoryTickFunction.EndTickGroup = ETickingGroup::TG_PrePhysics;
 	this->mFactoryTickFunction.bTickEvenWhenPaused = false;
@@ -82,16 +81,18 @@ AFGBuildableSubsystem* AFGBuildableSubsystem::Get(UWorld* world){ return nullptr
 AFGBuildableSubsystem* AFGBuildableSubsystem::Get(UObject* worldContext){ return nullptr; }
 AFGBuildable* AFGBuildableSubsystem::BeginSpawnBuildable(TSubclassOf<  AFGBuildable > inClass, const FTransform& inTransform){ return nullptr; }
 void AFGBuildableSubsystem::AddBuildable( AFGBuildable* buildable){ }
+void AFGBuildableSubsystem::OnDesignerBuildableSpawned(AFGBuildable* buildable){ }
+void AFGBuildableSubsystem::AssignConveyorTickOrder(int32 id){ }
 void AFGBuildableSubsystem::AddConveyor(AFGBuildableConveyorBase* conveyor){ }
-void AFGBuildableSubsystem::RemoveFogPlanes( AFGBuildable* buildable){ }
 AFGBuildableConveyorBase* AFGBuildableSubsystem::GetConnectedConveyorBelt( UFGFactoryConnectionComponent* connection){ return nullptr; }
 void AFGBuildableSubsystem::RemoveBuildable( AFGBuildable* buildable){ }
 void AFGBuildableSubsystem::RemoveConveyor(AFGBuildableConveyorBase* conveyor){ }
-void AFGBuildableSubsystem::RemoveConveyorFromBucket(AFGBuildableConveyorBase* conveyorToRemove){ }
+bool AFGBuildableSubsystem::RemoveConveyorFromBucket(AFGBuildableConveyorBase* conveyorToRemove){ return bool(); }
 void AFGBuildableSubsystem::RearrangeConveyorBuckets(int32 emptiedBucketID){ }
 void AFGBuildableSubsystem::RemoveAndSplitConveyorBucket(AFGBuildableConveyorBase* conveyorToRemove){ }
 bool AFGBuildableSubsystem::IsServerSubSystem() const{ return bool(); }
 void AFGBuildableSubsystem::GetTypedBuildable(TSubclassOf<  AFGBuildable > inClass, TArray<  AFGBuildable* >& out_buildables) const{ }
+void AFGBuildableSubsystem::GetOcclusionAffectingBuildebles(TArray<AFGBuildable*>& Out, const FVector& RequestLocation, float Range, bool bParallel) const{ }
 void AFGBuildableSubsystem::ReplayBuildingEffects(){ }
 const FFactoryCustomizationColorSlot& AFGBuildableSubsystem::GetColorSlot_Data(uint8 index) const{ return *(new FFactoryCustomizationColorSlot); }
 void AFGBuildableSubsystem::SetColorSlot_Data(uint8 index, FFactoryCustomizationColorSlot color){ }
@@ -102,7 +103,6 @@ void AFGBuildableSubsystem::BuildableLightColorSlotsUpdated(const TArray< FLinea
 void AFGBuildableSubsystem::UpdateBuildableCullDistances(float newFactor){ }
 UMaterialInstanceDynamic* AFGBuildableSubsystem::GetConveyorBelTrackMaterialFromSpeed(float speed, UMaterialInterface* currentMaterial){ return nullptr; }
 void AFGBuildableSubsystem::DisplayDebug( UCanvas* canvas, const  FDebugDisplayInfo& debugDisplay, float& YL, float& YPos){ }
-void AFGBuildableSubsystem::DebugEnableInstancing(bool enabled){ }
 void AFGBuildableSubsystem::DebugGetFactoryActors(TArray< AActor* >& out_actors){ }
 FName AFGBuildableSubsystem::GetMeshMapName(UStaticMesh* mesh, UMeshComponent* sourceComponent){ return FName(); }
 FNetConstructionID AFGBuildableSubsystem::GetNewNetConstructionID(){ return FNetConstructionID(); }
@@ -120,7 +120,6 @@ float AFGBuildableSubsystem::GetDistanceSqToBoundingBox(const FVector& point,  A
 void AFGBuildableSubsystem::RegisterFactoryTickFunction(bool shouldRegister){ }
 void AFGBuildableSubsystem::CreateFactoryStatID() const{ }
 void AFGBuildableSubsystem::UpdateReplayEffects(float dt){ }
-void AFGBuildableSubsystem::AddBuildableMeshInstances( AFGBuildable* buildable){ }
 void AFGBuildableSubsystem::AddToTickGroup(AFGBuildable* buildable){ }
 void AFGBuildableSubsystem::RemoveFromTickGroup(AFGBuildable* buildable){ }
 void AFGBuildableSubsystem::SetupColoredMeshInstances(AFGBuildable* buildable){ }

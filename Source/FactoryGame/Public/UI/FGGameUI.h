@@ -30,6 +30,8 @@ class FACTORYGAME_API UFGGameUI : public UFGBaseUI
 {
 	GENERATED_BODY()
 public:
+	UFGGameUI( const FObjectInitializer& ObjectInitializer );
+	
 	/** Closes down all interact widgets */
 	UFUNCTION( BlueprintNativeEvent, BlueprintCallable, Category = "UI" )
 	void PopAllWidgets(); 
@@ -50,6 +52,10 @@ public:
 	UFUNCTION( BlueprintPure, Category = "UI" )
 	FORCEINLINE TArray< UFGInteractWidget * > GetInteractWidgetStack() { return mInteractWidgetStack; }
 
+	/** Returns widget stack */
+	UFUNCTION( BlueprintPure, Category = "UI" )
+	FORCEINLINE bool HasActiveInteractWidget() { return mInteractWidgetStack.Num() > 0; }
+
 	/** Returns the first widget of the given class in the interact stack */
 	UFUNCTION( BlueprintPure, Category = "UI" )
 	UFGInteractWidget* GetInteractWidgetOfClass( TSubclassOf< UFGInteractWidget > interactWidgetClass ) const;
@@ -66,6 +72,12 @@ public:
 	UFUNCTION( BlueprintNativeEvent, BlueprintCallable, Category = "UI" )
 	void AddInteractWidget( UFGInteractWidget* widgetToAdd );
 
+	/** Toggles a widget on and off. Useful in cases where you want to open and close the UI with the same button, like with the Locomotive UI.
+	 *  Native version of BPIGameUI::ToogleInteractWidget. Calls the same BP code in BP_GameUI
+	 */
+	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable, Category = "UI" )
+	void OnToggleInteractWidget( TSubclassOf<UFGInteractWidget> widgetToToogle, UObject* interactObject );
+
 	/* Pushes widget */
 	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable, Category = "UI")
 	void PushWidget(UFGInteractWidget* Widget);
@@ -79,31 +91,19 @@ public:
 	bool PopWidget(UFGInteractWidget* WidgetToRemove );
 
 	/** Adds a new message to the pending message array */
-	UFUNCTION( BlueprintCallable, Category = "UI" )
-	void AddPendingMessage( FPendingMessageQueue message );
+	void AddPendingMessage( UFGMessageBase* message );
+	void AddPendingMessage( UFGMessage* message );
+	void AddPendingMessage( TSubclassOf<UFGMessageBase> messageClass );
 
 	/** Handle message. Usually grabbed from the pending message list at appropriate time */
 	UFUNCTION( BlueprintImplementableEvent, Category = "UI" )
 	void ReceivedMessage( TSubclassOf< class UFGMessageBase > inMessage );
 
-	/** Answer a call that is shown on the screen */
-    void AnswerCall( TSubclassOf< class UFGAudioMessage > inMessage );
-
-	/** Decline a call that is shown on the screen */
-    void DeclineCall( TSubclassOf< class UFGAudioMessage > inMessage );
-
 	/** Handle pending messages and push them at appropriate time */
 	void HandlePendingMessages( float InDeltaTime );
 
-	void PlayMessageQueue( FPendingMessageQueue newMessageQueue );
-
-	void UpdateActiveMessageQueue();
-
-	UFUNCTION()
-	void PlayNextMessageInActiveMessageQueue();
-
 	/**  Is this a good time to start the given message queue? */
-	bool CanReceiveMessageQueue( FPendingMessageQueue inMessageQueue );
+	bool CanReceiveMessageQueue();
 
 	/**  Is this a good time to play the given message? */
 	bool CanReceiveMessage( TSubclassOf< class UFGMessageBase > inMessage );
@@ -116,9 +116,24 @@ public:
 	UFUNCTION( BlueprintPure, Category = "UI" )
     FORCEINLINE class UFGAudioMessage* GetActiveAudioMessage(){ return mActiveAudioMessage; }
 
-	/** Called from in-game when the cancel key ( escape ) was pressed when no widget has focus */
+	/** Called from in-game when the pause game key ( escape ) was pressed */
 	UFUNCTION( BlueprintCallable, Category = "UI" )
-	void CancelPressed();
+	void Native_HandlePauseGamePressed();
+	/** Allow BP implementation to handle escape pressed. Returning true will mean BP handled the call and we shouldn't process further */
+	UFUNCTION( BlueprintImplementableEvent, Category = "UI" )
+	bool HandlePauseGamePressed();
+
+	/** Brings up the in game pause menu */
+	UFUNCTION( BlueprintImplementableEvent, Category = "UI" )
+	void OnPauseGame();
+
+	/** Sets whether the pause menu is currently open at the moment. Does not actually open the pause menu. */
+	UFUNCTION( BlueprintCallable, Category = "UI" )
+	void SetPauseMenuOpen( bool isOpen );
+
+	/** Returns whether or not the pause menu is currently open. */
+	UFUNCTION( BlueprintPure, Category = "UI" )
+	bool IsPauseMenuOpen() const { return mPauseMenuOpen; }
 
 	/** Triggered when we have finished playing the active audio message */
 	UFUNCTION()
@@ -189,13 +204,12 @@ public:
 	UFUNCTION( BlueprintCallable, Category ="FactoryGame|Message")
 	void PlayAudioMessage( TSubclassOf<UFGAudioMessage> messageClass );
 
+	// @todok2 Temporary until we cleaned up system
+	void Internal_PlayAudioMessage( class UFGAudioMessage* audioMessage );
+
 	/** Finds a widget in the interact widget stack, returns null if not found */
 	UFUNCTION( BlueprintPure, Category="FactoryGame|UI")
 	UFGInteractWidget* FindWidgetByClass( TSubclassOf<UFGInteractWidget> widgetClass );
-
-	/** Get the on screen call widget */
-	UFUNCTION( BlueprintImplementableEvent, Category = "UI" )
-    class UFGOnScreenCallWidget* GetOnScreenCallWidget() const;
 
 	/** Call this to setup the hud for resuming the game */
 	UFUNCTION( BlueprintCallable, Category="FactoryGame|HUD")
@@ -217,6 +231,21 @@ public:
 	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable, Category = "FactoryGame|HUD" )
 	void PushInventoryNotification( UFGInventoryComponent* source, UFGInventoryComponent* destination, FItemAmount ItemAmount );
 
+	void Native_OnFactoryClipboardCopied( UObject* object, class UFGFactoryClipboardSettings* factoryClipboardSettings );
+	// Called when we copied a factory clipboard setting.
+	UFUNCTION( BlueprintImplementableEvent, Category = "Factory Clipboard" )
+	void OnFactoryClipboardCopied( UObject* interactObject, class UFGFactoryClipboardSettings* factoryClipboardSettings );
+
+	void Native_OnFactoryClipboardPasted( UObject* object, class UFGFactoryClipboardSettings* factoryClipboardSettings );
+	// Called when we pasted a factory clipboard setting. Only called if actually could paste settings to interact object.
+	UFUNCTION( BlueprintImplementableEvent, Category = "Factory Clipboard" )
+	void OnFactoryClipboardPasted( UObject* interactObject, class UFGFactoryClipboardSettings* factoryClipboardSettings );
+
+	UFUNCTION( BlueprintCallable, BlueprintImplementableEvent, Category = "UI" )
+	void ShowTextNotification( const FText& Text );
+
+	UFUNCTION( BlueprintImplementableEvent, Category = "UI" )
+	bool OnShortcutPressed( int32 shortcutIndex );
 protected:
 	// Begin UUserWidget interface
 	virtual FReply NativeOnPreviewMouseButtonDown( const FGeometry& InGeometry, const FPointerEvent& InMouseEvent ) override;
@@ -238,9 +267,13 @@ protected:
 	UFUNCTION( BlueprintImplementableEvent, Category = "UI" )
 	UNamedSlot* GetAudioMessageSlot();
 
+	UFUNCTION( BlueprintPure, Category = "UI" )
+	bool ShouldShowFicsitSplashWidget() const;
+
 public:
-	/** Array with messages that the player has stocked up */
-	TArray< FPendingMessageQueue > mPendingMessageQueues;
+	/** Array with messages that the player has stocked up and are awaiting to be played */
+	UPROPERTY( Transient )
+	TArray< class UFGMessageBase* > mPendingMessages;
 
 	/** Delegate for when mouse button is pressed. The event will not be handled 
 	so if you already are listening for mouse input you might get this and your own event */
@@ -265,14 +298,13 @@ private:
 	UPROPERTY()
 	class UFGAudioMessage* mActiveAudioMessage;
 
-	/** Message queue that the currently active audio message belongs to */
-	UPROPERTY()
-	FPendingMessageQueue mActiveMessageQueue;
-
 	/** How much time must pass between receiving audio messages at least? */
 	UPROPERTY( EditDefaultsOnly, Category = "UI" )
 	float mMinTimeBetweenAudioMessage;
 
 	/** Timer value used so that we don't push audio message direct after another */
 	float mAudioMessageCooldown;
+
+	/** Whether or not the pause menu is open. */
+	bool mPauseMenuOpen;
 };

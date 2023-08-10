@@ -24,12 +24,11 @@ public:
 	virtual void GetLifetimeReplicatedProps( TArray< FLifetimeProperty >& OutLifetimeProps ) const override;
 
 	// Begin AFGEquipment interface
-	virtual void PostLoadGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
 	virtual bool ShouldSaveState() const override;
 	// End
 
 	/** Called on both client and server */
-	virtual void BeginPrimaryFire() override;
+	virtual void Multicast_BeginPrimaryFire_Implementation() override;
 
 	/** Called on both client and server */
 	virtual void EndPrimaryFire() override;
@@ -56,9 +55,6 @@ protected:
 	UFUNCTION( Server, Reliable )
 	void Server_StartChargedProjectileSecondary();
 
-	UFUNCTION( NetMulticast, Reliable )
-	void Multicast_PrimaryFireStarted();
-
 	UFUNCTION( BlueprintNativeEvent, Category = "ChargedWeapon" )
 	void OnPrimaryFireStarted();
 
@@ -76,8 +72,8 @@ protected:
 	UFUNCTION( NetMulticast, Reliable )
 	void Multicast_ResetPressTimestamp();
 
-	/** Called when the player presses secondary fire */
-	void SecondaryFirePressed();
+	UFUNCTION( NetMulticast, Reliable )
+	void Multicast_SecondaryFirePressed();
 
 	/** Call animation from blueprint that will contain notify to trigger actual projectile secondary*/
 	UFUNCTION( BlueprintNativeEvent, Category = "ChargedWeapon" )
@@ -91,15 +87,11 @@ protected:
 	UFUNCTION( Server, Reliable )
 	void Server_ExecuteSecondaryFire();
 
-	/** Called from Hotbar status change, to indicate we have change SceneViewport Focus */
-	UFUNCTION()
-	void OnViewportFocusChanged( bool isOpen, TSubclassOf< class UUserWidget > interactionClass );
-
 	// Begin AFGEquipment interface
-	virtual void AddEquipmentActionBindings() override;
+	virtual void HandleDefaultEquipmentActionEvent( EDefaultEquipmentAction action, EDefaultEquipmentActionEvent actionEvent ) override;
 	// End AFGEquipment interface
 
-	virtual void ApplyDispersionReduction( float DeltaSeconds ) override;
+	virtual void UpdateDispersion( float DeltaSeconds ) override;
 
 	virtual void OnAmmoFired( AActor* SpawnedActor ) override;
 
@@ -108,7 +100,7 @@ protected:
 	TArray< AFGProjectile* > mDispensedProjectiles;
 
 	/** Tracks waiting for execute fire */
-	UPROPERTY( BlueprintReadOnly, Category ="ChargedWeapon" )
+	UPROPERTY( Replicated, BlueprintReadOnly, Category ="ChargedWeapon" )
 	bool mIsPendingExecuteFire;
 
 	/** If we charge the throw for this amount of time we will get max throw velocity */

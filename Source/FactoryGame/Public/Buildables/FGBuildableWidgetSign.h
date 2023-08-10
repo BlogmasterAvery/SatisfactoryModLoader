@@ -11,7 +11,16 @@
 #include "Buildables/FGBuildableSignBase.h"
 #include "FGBuildableWidgetSign.generated.h"
 
-
+UCLASS()
+class FACTORYGAME_API UFGSignClipboardSettings : public UFGFactoryClipboardSettings
+{
+	GENERATED_BODY()
+public:
+	
+	UPROPERTY( BlueprintReadWrite )
+	FPrefabSignData mPrefabSignData;
+	
+};
 
 /**
  * Class for the creating of placeable signs. Implements the sign interface for adding and removing element via a widget class
@@ -51,9 +60,17 @@ public:
 	// Begin Significance Interface Implementation
 	virtual void GainedSignificance_Implementation() override;
 	virtual void LostSignificance_Implementation() override;
+	virtual float GetSignificanceRange() override { return mGainSignificanceDistance; }
 	// End  Significance Interface Implementation
 
+	//~ Begin IFGFactoryClipboardInterface
+	bool CanUseFactoryClipboard_Implementation() override { return true; }
+	UFGFactoryClipboardSettings* CopySettings_Implementation() override;
+	bool PasteSettings_Implementation( UFGFactoryClipboardSettings* settings ) override;
+	//~ End IFGFactoryClipboardInterface
 
+	virtual void OnBuildEffectFinished() override;
+	
 	// When a text element is updated, this call will update that element and set the save data
 	UFUNCTION( BlueprintCallable, Category = "WidgetSign" )
 	void SetPrefabSignData( UPARAM( ref ) FPrefabSignData& signData );
@@ -65,18 +82,32 @@ public:
 	/** Updates all sign elements with currently set sign data */
 	void UpdateSignElements( FPrefabSignData& prefabSignData );
 
+	virtual float GetAdjustedEmissiveValue(int32 Level) const;
+
 protected:
 
 	/** Update sign prefab on replication */
 	UFUNCTION()
 	void OnRep_SignDataDirty();
 
+	/* Generate GUID based on settings*/
+	static uint32 GenerateGUID(FPrefabSignData& signData);
+
+	virtual void ConvertToEmissiveOnly(FPrefabSignData& prefabSignData) const;
+
+	virtual void SetupMaterialInstanceForProxyPlane(UMaterialInstanceDynamic* Instance, UTextureRenderTarget2D* RenderTarget);
+
 protected:
 	friend class UFGSignBuildingWidget;
+	friend class AFGSignSubsystem;
 
-	/** Root UMG component */
-	UPROPERTY( VisibleAnywhere, Category = "WidgetSign" )
-	class UWidgetComponent* mWidgetComponent;
+
+	///** Root UMG component */
+	//UPROPERTY( VisibleAnywhere, Category = "WidgetSign" )
+	//class UWidgetComponent* mWidgetComponent;
+	
+	UPROPERTY( VisibleAnywhere, Category = "WidgetSign", meta = (AllowPrivateAccess = "true") )
+	TObjectPtr<UStaticMeshComponent> mSignProxyPlane;
 
 	/** Sign Descriptor. This is a class that holds information that can be shared across different signs of similar aspect ratios */
 	UPROPERTY( EditDefaultsOnly, Category = "WidgetSign" )
@@ -101,6 +132,18 @@ protected:
 	UPROPERTY( EditDefaultsOnly )
 	UMaterialInterface* mWidgetMaterial;
 
+	UPROPERTY( EditDefaultsOnly )
+	UMaterialInterface* mEmissiveOnlySignMaterial;
+	
+	UPROPERTY( EditDefaultsOnly )
+	UMaterialInterface* mDefaultSignMaterial;
+
+	UPROPERTY(EditDefaultsOnly)
+	FIntPoint mSignDrawSize;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UUserWidget> mWidgetClass;
+	
 	//////////////////////////////////////////////////////////////////////////
 	/// Saved Properties
 
@@ -132,5 +175,6 @@ protected:
 	// When a signs data is changed, the server will increment this. When the onRep fires the client will add this sign to the PendingSigns array in the sign subsystem
 	UPROPERTY( ReplicatedUsing=OnRep_SignDataDirty )
 	uint8 mDataVersion;
-
+	
+	uint32 mCachedGUID = 0;
 };

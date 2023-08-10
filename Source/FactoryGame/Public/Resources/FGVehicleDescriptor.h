@@ -32,10 +32,7 @@ protected:
 	virtual TSubclassOf< class AFGHologram > GetHologramClassInternal() const override;
 	virtual TSubclassOf< AActor > GetBuildClassInternal() const override;
 
-#if WITH_EDITOR
-	virtual void SetupStage() override;
-	virtual FVector GetCenterOfCollision() override;
-#endif
+	FORCEINLINE virtual bool Internal_CanItemBePickedup() const override { return false; }
 
 public:
 	/** Value to display instead of display name and description. */

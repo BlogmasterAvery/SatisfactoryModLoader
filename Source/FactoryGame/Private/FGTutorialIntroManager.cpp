@@ -31,7 +31,6 @@ AFGTutorialIntroManager::AFGTutorialIntroManager() : Super() {
 	this->mDidStep5Upgrade = false;
 	this->mStartingPodClass = nullptr;
 	this->mStartingPod = nullptr;
-	this->mTradingPostLevel = 0;
 	this->mWaitTimeAfterCompletingMinorStep = 0.0;
 	this->mWaitTimeAfterCompletingHubStep = 0.0;
 	this->mHoldTimeToSkipIntro = 0.0;
@@ -75,8 +74,8 @@ void AFGTutorialIntroManager::CompleteTutorial(){ }
 void AFGTutorialIntroManager::IntroDone(){ }
 void AFGTutorialIntroManager::ResetHubTutorial(){ }
 void AFGTutorialIntroManager::SetCanSkipTutorialIntro(bool canSkip){ }
-void AFGTutorialIntroManager::GiveTutorialResources( AFGCharacterPlayer* inPlayer){ }
 void AFGTutorialIntroManager::OnCodexOpened(){ }
+void AFGTutorialIntroManager::SkipOnboarding(){ }
 void AFGTutorialIntroManager::BeginPlay(){ }
 void AFGTutorialIntroManager::OnBuildingBuiltGlobal( AFGBuildable* buildable){ }
 void AFGTutorialIntroManager::OnSchematicPurchased(TSubclassOf< UFGSchematic > newSchematic){ }
@@ -88,4 +87,6 @@ void AFGTutorialIntroManager::OnPlayerAddedItemToArmSlot(TSubclassOf<  UFGItemDe
 void AFGTutorialIntroManager::SetTradingpostBuilt(bool hasbuilt){ }
 void AFGTutorialIntroManager::OnIntroDone(){ }
 void AFGTutorialIntroManager::OnRep_TradingPostLevel(){ }
-bool AFGTutorialIntroManager::ShouldSkipTutorial() const{ return bool(); }
+void AFGTutorialIntroManager::OnRep_HasCompletedIntroTutorial(){ }
+bool AFGTutorialIntroManager::ShouldSkipOnboarding() const{ return bool(); }
+const int32 AFGTutorialIntroManager::MaxTradingPostLevel = int32();

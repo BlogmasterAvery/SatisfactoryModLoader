@@ -8,6 +8,7 @@
 #include "Components/SplineMeshComponent.h"
 #include "FGInstancedSplineMeshComponent.h"
 #include "FGRailroadSignalBlock.h"
+#include "FGSplineBuildableInterface.h"
 #include "FGBuildableRailroadTrack.generated.h"
 
 
@@ -87,7 +88,7 @@ struct TStructOpsTypeTraits< FRailroadTrackPosition > : public TStructOpsTypeTra
  * A piece of train track, it has a spline and to ends.
  */
 UCLASS( Abstract )
-class FACTORYGAME_API AFGBuildableRailroadTrack : public AFGBuildable
+class FACTORYGAME_API AFGBuildableRailroadTrack : public AFGBuildable, public IFGSplineBuildableInterface
 {
 	GENERATED_BODY()
 public:
@@ -104,8 +105,13 @@ public:
 	virtual bool CanDismantle_Implementation() const override;
 	// End IFGDismantleInterface
 
+	// Begin Save Interface
+	virtual void PostLoadGame_Implementation(int32 saveVersion, int32 gameVersion) override;
+	// End Save Interface
+
 	// Begin Buildable interface
 	virtual int32 GetDismantleRefundReturnsMultiplier() const override;
+	virtual bool ShouldBeConsideredForBase_Implementation() override { return false; }
 	// End Buildable interface
 
 	/** Get the spline for this track. */
@@ -175,6 +181,11 @@ public:
 	void OnVehicleEntered( class AFGRailroadVehicle* vehicle );
 	void OnVehicleExited( class AFGRailroadVehicle* vehicle );
 
+	/**
+	 * @return The vehicles on this track.
+	 */
+	const TSet< class AFGRailroadVehicle* >& GetVehicles() const { return mVehicles; }
+
 	/** @return true if this track is occupied by any vehicles. */
 	bool IsOccupied() const { return mVehicles.Num() > 0; }
 	/** @return true if there is a vehicle to close to the given connection. */
@@ -192,6 +203,22 @@ public:
 	/** Add an overlapping track */
 	void AddOverlappingTrack( AFGBuildableRailroadTrack* track );
 
+	// Begin IFGSplineBuildableInterface
+	const TArray< FSplinePointData >& GetSplinePointData() const { return mSplineData; };
+	float GetMeshLength() { return mMeshLength; }
+	FVector GetCollisionExtent() override { return COLLISION_EXTENT; }
+	float GetCollisionSpacing() override { return COLLISION_SPACING; }
+	FVector GetCollisionOffset() override { return COLLISION_OFFSET; }
+	UStaticMesh* GetUsedSplineMesh() override { return mMesh; }
+	void SetupConnections() override;
+	// End IFGSplineBuildableInterface
+	
+	FORCEINLINE UStaticMesh* GetMesh() const { return mMesh; }
+
+	virtual void PostSerializedFromBlueprint(bool isBlueprintWorld) override;
+
+	void UnrotateForBlueprintPlaced();
+	
 private:
 	void SetTrackGraphID( int32 trackGraphID );
 	void SetSignalBlock( TWeakPtr< FFGRailroadSignalBlock > block );
@@ -216,9 +243,8 @@ private:
 	UPROPERTY( VisibleAnywhere, Category = "Spline" )
 	class USplineComponent* mSplineComponent;
 
-	/** The spline meshes for this train track. */
 	UPROPERTY( VisibleAnywhere, Category = "Spline" )
-	class UFGInstancedSplineMeshComponent* mInstancedSplineComponent;
+	class UInstancedSplineMeshComponent* mInstancedSplineMesh;
 
 	/** Spline data saved in a compact form for saving and replicating. All the vectors are in local space. */
 	UPROPERTY( SaveGame, Replicated, Meta = (NoAutoJson = true) )
@@ -236,6 +262,7 @@ private:
 	bool mIsOwnedByPlatform;
 
 	/** The graph this track belongs to. */
+	UPROPERTY( VisibleAnywhere, Category = "Track" )
 	int32 mTrackGraphID;
 
 	/** Length of this track. [cm] */
@@ -253,7 +280,7 @@ private:
 	TWeakPtr< FFGRailroadSignalBlock > mSignalBlock;
 
 	/** A unique id for this signal block, used for block coloring. */
-	UPROPERTY( ReplicatedUsing = OnRep_SignalBlockID )
+	UPROPERTY( ReplicatedUsing = OnRep_SignalBlockID, VisibleAnywhere, Category = "Track" )
 	int32 mSignalBlockID;
 
 	/** The instance spline mesh component dynamic spawned when needed to preview feedback. */
@@ -262,4 +289,10 @@ private:
 	/* Mesh to use for block feedback. */
 	UPROPERTY( EditDefaultsOnly, Category = "Track|Block Visualization" )
 	UStaticMesh* mBlockVisualizationMesh;
+
+	// Collision Constants. These used to be magic numbers in the .cpp but were moved here so they could be accessed via the SplineBuildableInterface
+	static inline const FVector COLLISION_EXTENT = FVector( 200.f, 300.f, 30.f );
+	static inline const float COLLISION_SPACING =   300.f;
+	static inline const FVector COLLISION_OFFSET = FVector( 0.f, 0.f, 30.f + 1.f );
 };
+

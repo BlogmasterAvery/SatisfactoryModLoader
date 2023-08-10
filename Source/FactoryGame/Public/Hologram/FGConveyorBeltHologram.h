@@ -33,12 +33,15 @@ public:
 	virtual void SpawnChildren( AActor* hologramOwner, FVector spawnLocation, APawn* hologramInstigator ) override;
 	virtual bool IsValidHitResult( const FHitResult& hitResult ) const override;
 	virtual void AdjustForGround( FVector& out_adjustedLocation, FRotator& out_adjustedRotation ) override;
-	virtual void PreHologramPlacement() override;
-	virtual void PostHologramPlacement() override;
+	virtual void PreHologramPlacement( const FHitResult& hitResult ) override;
+	virtual void PostHologramPlacement( const FHitResult& hitResult ) override;
 	virtual bool TrySnapToActor( const FHitResult& hitResult ) override;
 	virtual void Scroll( int32 delta ) override;
-	virtual void GetSupportedScrollModes( TArray<EHologramScrollMode>* out_modes ) const override;
 	virtual float GetHologramHoverHeight() const override;
+	virtual void GetIgnoredClearanceActors( TArray< AActor* >& ignoredActors ) const override;
+	virtual void CheckBlueprintCommingling() override;
+	virtual AFGHologram* GetNudgeHologramTarget() override;
+	virtual bool CanTakeNextBuildStep() const override;
 	// End AFGHologram Interface
 
 	// Begin FGConstructionMessageInterface
@@ -91,11 +94,30 @@ private:
 
 private:
 	bool mUsingCutstomPoleRotation = false;
-
-	/**Used to redirect input and construct poles when needed*/
+	
+	/** Child pole hologram used for normal placement */
 	UPROPERTY( Replicated )
-	class AFGConveyorPoleHologram* mChildPoleHologram = nullptr;
+	class AFGConveyorPoleHologram* mChildPoleHologram[ 2 ];
 
+	/** Child pole hologram used for wall placement */
+	UPROPERTY( Replicated )
+	class AFGWallAttachmentHologram* mChildWallPoleHologram[ 2 ];
+
+	/** Child pole hologram used for ceiling placement */
+	UPROPERTY( Replicated )
+	class AFGWallAttachmentHologram* mChildCeilingPoleHologram[ 2 ];
+
+	/** Snap connection of our child wall pole hologram. */
+	UPROPERTY()
+	class UFGFactoryConnectionComponent* mChildWallPoleSnapConnection[ 2 ];
+
+	/** Snap connection of our child ceiling pole hologram. */
+	UPROPERTY()
+	class UFGFactoryConnectionComponent* mChildCeilingPoleSnapConnection[ 2 ];
+
+	/** Whether or not to flip the direction our belt snaps to our child wall pole hologram. */
+	bool mFlipWallPoleSnapDirection;
+	
 	/** The two connection components for this conveyor. */
 	UPROPERTY()
 	class UFGFactoryConnectionComponent* mConnectionComponents[ 2 ];
@@ -112,6 +134,14 @@ private:
 	/** Class of conveyor pole to place at the end. */
 	UPROPERTY( EditDefaultsOnly, Category = "Conveyor Belt" )
 	TSubclassOf< class UFGRecipe > mDefaultConveyorPoleRecipe;
+
+	/** Class of conveyor pole to place at the end. */
+	UPROPERTY( EditDefaultsOnly, Category = "Conveyor Belt" )
+	TSubclassOf< class UFGRecipe > mDefaultConveyorWallPoleRecipe;
+
+	/** Class of conveyor pole to place at the end. */
+	UPROPERTY( EditDefaultsOnly, Category = "Conveyor Belt" )
+	TSubclassOf< class UFGRecipe > mDefaultConveyorCeilingPoleRecipe;
 
 	/** What radius will the bends have. */
 	UPROPERTY( EditDefaultsOnly, Category = "Conveyor Belt" )

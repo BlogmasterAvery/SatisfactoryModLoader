@@ -31,16 +31,21 @@ public:
 	virtual int32 GetBaseCostMultiplier() const override;
 	virtual AActor* GetUpgradedActor() const override;
 	virtual void SpawnChildren( AActor* hologramOwner, FVector spawnLocation, APawn* hologramInstigator ) override;
-	virtual void GetSupportedScrollModes( TArray< EHologramScrollMode >* out_modes ) const override;
-	virtual void GetSupportedBuildModes_Implementation( TArray<TSubclassOf<UFGHologramBuildModeDescriptor>>& out_buildmodes ) const override;
+	virtual void GetSupportedBuildModes_Implementation( TArray<TSubclassOf<UFGBuildGunModeDescriptor>>& out_buildmodes ) const override;
 	virtual bool IsValidHitResult( const FHitResult& hitResult ) const override;
 	virtual void AdjustForGround( FVector& out_adjustedLocation, FRotator& out_adjustedRotation ) override;
+	virtual void PreHologramPlacement( const FHitResult& hitResult ) override;
+	virtual void PostHologramPlacement( const FHitResult& hitResult ) override;
 	virtual bool TrySnapToActor( const FHitResult& hitResult ) override;
 	virtual void OnInvalidHitResult() override;
 	virtual void Scroll( int32 delta ) override;
 	virtual void OnPendingConstructionHologramCreated_Implementation( AFGHologram* fromHologram ) override;
 	virtual void SetSnapToGuideLines( bool isEnabled ) override;
 	virtual float GetHologramHoverHeight() const override;
+	virtual void GetIgnoredClearanceActors( TArray< AActor* >& ignoredActors ) const override;
+	virtual void CheckBlueprintCommingling() override;
+	virtual AFGHologram* GetNudgeHologramTarget() override;
+	virtual bool CanTakeNextBuildStep() const override;
 	// End AFGHologram Interface
 
 	// Begin FGConstructionMessageInterface
@@ -71,8 +76,6 @@ protected:
 
 	/** Creates the clearance detector used with Pipelines */
 	void SetupPipeClearanceDetector();
-
-	FORCEINLINE class AFGPipelineSupportHologram* GetChildPoleHologram() const { return mChildPoleHologram; }
 
 private:
 	void RouteSelectedSplineMode( FVector startLocation, FVector startNormal, FVector endLocation, FVector endNormal );
@@ -162,7 +165,15 @@ private:
 
 	/**Used to redirect input and construct poles when needed*/
 	UPROPERTY( Replicated )
-	class AFGPipelineSupportHologram* mChildPoleHologram = nullptr;
+	class AFGPipelineSupportHologram* mChildPoleHologram[ 2 ];
+
+	/**Used to redirect input and construct wall poles when needed*/
+	UPROPERTY( Replicated )
+	class AFGWallAttachmentHologram* mChildWallPoleHologram[ 2 ];
+
+	/** Connection component used for snapping with our child wall pole. */
+	UPROPERTY()
+	UFGPipeConnectionComponentBase* mChildWallPoleConnection[ 2 ];
 
 	/** The two connection components for this pipeline. */
 	UPROPERTY()
@@ -176,9 +187,13 @@ private:
 	UPROPERTY()
 	class AFGBuildablePipeline* mUpgradedPipeline;
 	
-	/** Class of conveyor pole to place at the end. */
+	/** Class of pipe pole to place at the end. */
 	UPROPERTY( EditDefaultsOnly, Category = "Pipeline" )
 	TSubclassOf< class UFGRecipe > mDefaultPipelineSupportRecipe;
+
+	/** Class of pipe wall pole to place at the end. */
+	UPROPERTY( EditDefaultsOnly, Category = "Pipeline" )
+	TSubclassOf< class UFGRecipe > mDefaultPipelineWallSupportRecipe;
 
 	/** What radius will the bends have. */
 	UPROPERTY( EditDefaultsOnly, Category = "Pipeline" )
@@ -199,12 +214,6 @@ private:
 	/** Arrow to indicate the direction of the conveyor while placing it. */
 	UPROPERTY()
 	class UStaticMeshComponent* mConnectionArrowComponent;
-
-	/** Struct for generating smart pathing between two connections */
-	struct FHologramPathingGrid* mPathingGrid;
-
-	/** Is path finding possible with the given points? */
-	bool mCanPerformPathing;
 
 	/** All the generated spline meshes. */
 	UPROPERTY()
@@ -232,10 +241,11 @@ private:
 	UPROPERTY()
 	TArray< class AFGBuildablePassthrough* > mSnappedPassthroughs;
 
+	UPROPERTY()
+	FVector mPassthroughOverrideStartLocation;
+
 	/** Cached from the default buildable. */
 	UPROPERTY()
 	class UStaticMesh* mMesh;
 	float mMeshLength;
-
-	bool mPoleSnappedToActor = false;
 };

@@ -4,10 +4,6 @@
 
 AFGFactoryBuildingHologram::AFGFactoryBuildingHologram() : Super() {
 	this->mPlacementRequirements = EFactoryBuildingPlacementRequirements::FBPR_None;
-	this->mDesiredZoop.X = 0;
-	this->mDesiredZoop.Y = 0;
-	this->mDesiredZoop.Z = 0;
-	this->mMaxZoopAmount = 0;
 	this->mDefaultBlockedZoopDirections = 0;
 	this->mBuildStep = EFactoryBuildingHologramBuildStep::FBHBS_PlacementAndRotation;
 	this->mBuildModeZoop = nullptr;
@@ -23,11 +19,12 @@ void AFGFactoryBuildingHologram::GetLifetimeReplicatedProps(TArray< FLifetimePro
 bool AFGFactoryBuildingHologram::IsValidHitResult(const FHitResult& hitResult) const{ return bool(); }
 AActor* AFGFactoryBuildingHologram::Construct(TArray<AActor*>& out_children, FNetConstructionID constructionID){ return nullptr; }
 int32 AFGFactoryBuildingHologram::GetBaseCostMultiplier() const{ return int32(); }
-void AFGFactoryBuildingHologram::GetSupportedBuildModes_Implementation(TArray<TSubclassOf<UFGHologramBuildModeDescriptor>>& out_buildmodes) const{ }
+void AFGFactoryBuildingHologram::GetSupportedBuildModes_Implementation(TArray<TSubclassOf<UFGBuildGunModeDescriptor>>& out_buildmodes) const{ }
 bool AFGFactoryBuildingHologram::DoMultiStepPlacement(bool isInputFromARelease){ return bool(); }
-void AFGFactoryBuildingHologram::OnBuildModeChanged(){ }
-USceneComponent* AFGFactoryBuildingHologram::SetupComponent(USceneComponent* attachParent, UActorComponent* componentTemplate, const FName& componentName){ return nullptr; }
+void AFGFactoryBuildingHologram::OnBuildModeChanged(TSubclassOf<UFGHologramBuildModeDescriptor> buildMode){ }
+USceneComponent* AFGFactoryBuildingHologram::SetupComponent(USceneComponent* attachParent, UActorComponent* componentTemplate, const FName& componentName, const FName& attachSocketName){ return nullptr; }
 bool AFGFactoryBuildingHologram::CanBeZooped() const{ return bool(); }
+void AFGFactoryBuildingHologram::CheckClearance(const FVector& locationOffset){ }
 void AFGFactoryBuildingHologram::SerializeConstructMessage(FArchive& ar, FNetConstructionID id){ }
 void AFGFactoryBuildingHologram::OnPendingConstructionHologramCreated_Implementation(AFGHologram* fromHologram){ }
 void AFGFactoryBuildingHologram::CheckValidFloor(){ }

@@ -2,20 +2,21 @@
 
 #include "Hologram/FGPoleHologram.h"
 #include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 
 AFGPoleHologram::AFGPoleHologram() : Super() {
 	this->mPoleMesh.Mesh = nullptr;
 	this->mPoleMesh.Height = 0.0;
-	this->mPoleMeshComponent = nullptr;
+	this->mPoleMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PoleMesh"));
 	this->mPoleHeightComponent = nullptr;
 	this->mInstancedMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Instanced Mesh Component"));
 	this->mPoleHeight = 0.0;
 	this->mMaxZoopAmount = 9;
 	this->mBuildModeZoop = nullptr;
-	this->mClearanceExtent.X = 0.0;
-	this->mClearanceExtent.Y = 0.0;
-	this->mClearanceExtent.Z = 0.0;
+	this->mClearanceExtent = FVector::ZeroVector;
 	this->mUseGradualFoundationRotations = true;
+	this->mAllowEdgePlacementInDesignerEvenOnIntersect = true;
+	this->mPoleMeshComponent->SetupAttachment(RootComponent);
 	this->mInstancedMeshComponent->SetupAttachment(RootComponent);
 }
 void AFGPoleHologram::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
@@ -28,9 +29,10 @@ bool AFGPoleHologram::IsValidHitResult(const FHitResult& hitResult) const{ retur
 bool AFGPoleHologram::TrySnapToActor(const FHitResult& hitResult){ return bool(); }
 void AFGPoleHologram::SetHologramLocationAndRotation(const FHitResult& hitResult){ }
 AActor* AFGPoleHologram::Construct(TArray<AActor*>& out_children, FNetConstructionID constructionID){ return nullptr; }
-void AFGPoleHologram::GetSupportedBuildModes_Implementation(TArray< TSubclassOf< UFGHologramBuildModeDescriptor > >& out_buildmodes) const{ }
-void AFGPoleHologram::OnBuildModeChanged(){ }
+void AFGPoleHologram::GetSupportedBuildModes_Implementation(TArray< TSubclassOf< UFGBuildGunModeDescriptor > >& out_buildmodes) const{ }
+void AFGPoleHologram::OnBuildModeChanged(TSubclassOf<UFGHologramBuildModeDescriptor> buildMode){ }
 int32 AFGPoleHologram::GetBaseCostMultiplier() const{ return int32(); }
+bool AFGPoleHologram::CanNudgeHologram() const{ return bool(); }
 void AFGPoleHologram::ResetBuildSteps(){ }
 void AFGPoleHologram::SetPoleHeight(float height){ }
 void AFGPoleHologram::SerializeConstructMessage(FArchive& ar, FNetConstructionID id){ }

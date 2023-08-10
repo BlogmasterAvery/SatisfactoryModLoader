@@ -31,11 +31,12 @@ public:
 	// End AActor interface
 
 	// Begin AFGHologram interface
-	virtual class USceneComponent* SetupComponent( USceneComponent* attachParent, UActorComponent* componentTemplate, const FName& componentName ) override;
+	virtual class USceneComponent* SetupComponent( USceneComponent* attachParent, UActorComponent* componentTemplate, const FName& componentName, const FName& attachSocketName ) override;
 	virtual void SetHologramLocationAndRotation( const FHitResult& hitResult ) override;
 	virtual int32 GetBaseCostMultiplier() const override;
 	virtual void SpawnChildren( AActor* hologramOwner, FVector spawnLocation, APawn* hologramInstigator ) override;
 	virtual bool DoMultiStepPlacement(bool isInputFromARelease) override;
+	virtual void CheckBlueprintCommingling() override;
 	// End AFGHologram interface
 
 	// Begin AFGBuildableHologram interface

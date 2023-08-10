@@ -3,9 +3,12 @@
 #include "FGFactorySettings.h"
 #include "Equipment/FGBuildGun.h"
 #include "Equipment/FGResourceScanner.h"
+#include "FGBlueprintShortcut.h"
+#include "FGBoomBoxPlayer.h"
 #include "FGEmoteShortcut.h"
 #include "FGFactoryCustomizationShortcut.h"
 #include "FGRecipeShortcut.h"
+#include "Resources/FGItemDescriptor.h"
 
 UFGFactorySettings::UFGFactorySettings() : Super() {
 	this->mDefaultValidPlacementMaterial = nullptr;
@@ -23,6 +26,14 @@ UFGFactorySettings::UFGFactorySettings() : Super() {
 	this->mDefaultPipeConnectionFrameMesh = nullptr;
 	this->mDefaultPipeConnectionArrowMesh = nullptr;
 	this->mDefaultPowerConnectionMesh = nullptr;
+	this->mBlueprintDirectionIndicatorMesh = nullptr;
+	this->mBlueprintDirectionIndicatorMaterial = nullptr;
+	this->mBlueprintDirectionMeshScale = 0.0;
+	this->mBlueprintDirectionMeshForwardOffset = 0.0;
+	this->mBlueprintDirectionMeshHeightOffset = 0.0;
+	this->mBlueprintDirectionMeshRotation = 0.0;
+	this->mBlueprintDirectionMeshPlaceOnGround = true;
+	this->mBlueprintProxyMaterial = nullptr;
 	this->mClearanceMesh = nullptr;
 	this->mClearanceMaterial = nullptr;
 	this->mHologramLoopSound = nullptr;
@@ -38,18 +49,20 @@ UFGFactorySettings::UFGFactorySettings() : Super() {
 	this->mBuildGunClass = AFGBuildGun::StaticClass();
 	this->mResourceScannerClass = AFGResourceScanner::StaticClass();
 	this->mResourceMinerClass = nullptr;
+	this->mBoomBoxPlayerClass = AFGBoomBoxPlayer::StaticClass();
+	this->mBoomBoxEquipmentDesc = UFGItemDescriptor::StaticClass();
 	this->mLegMesh = nullptr;
 	this->mFootMesh = nullptr;
 	this->mMaxFeetLength = 1000.0;
 	this->mRecipeShortcutClass = UFGRecipeShortcut::StaticClass();
 	this->mCustomizationShortcutClass = UFGFactoryCustomizationShortcut::StaticClass();
 	this->mEmoteShortcutClass = UFGEmoteShortcut::StaticClass();
+	this->mBlueprintShortcutClass = UFGBlueprintShortcut::StaticClass();
 	this->mNumHotbars = 2;
 	this->mNumPresetHotbars = 2;
 	this->mNumSlotsPerHotbar = 10;
-	this->mFluidToInventoryStackRate = 0;
-	this->mInventoryStackToFluidRate = 0;
 	this->mAddedPipeProductionPressure = 0.0;
+	this->mPaniniProjectionCollection = nullptr;
 }
 UAkAudioEvent* UFGFactorySettings::GetRandomConstructionSound(){ return nullptr; }
 UAkAudioEvent* UFGFactorySettings::GetRandomDismantleSound(){ return nullptr; }

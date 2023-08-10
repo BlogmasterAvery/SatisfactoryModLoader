@@ -2,14 +2,17 @@
 
 #include "Buildables/FGBuildableWidgetSign.h"
 #include "Components/SceneComponent.h"
-#include "Components/WidgetComponent.h"
+#include "Components/StaticMeshComponent.h"
 
 AFGBuildableWidgetSign::AFGBuildableWidgetSign() : Super() {
-	this->mWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetDisplayRoot"));
+	this->mSignProxyPlane = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProxyMesh"));
 	this->mSignTypeDescriptor = nullptr;
 	this->mPrefabLayout = nullptr;
-	this->mGainSignificanceDistance = 1000000.0;
+	this->mGainSignificanceDistance = 10000.0;
 	this->mWidgetMaterial = nullptr;
+	this->mEmissiveOnlySignMaterial = nullptr;
+	this->mDefaultSignMaterial = nullptr;
+	this->mWidgetClass = nullptr;
 	this->mActivePrefabLayout = nullptr;
 	this->mForegroundColor = FLinearColor(0.0, 0.0, 0.0, 0.0);
 	this->mBackgroundColor = FLinearColor(0.0, 0.0, 0.0, 0.0);
@@ -18,7 +21,7 @@ AFGBuildableWidgetSign::AFGBuildableWidgetSign() : Super() {
 	this->mGlossiness = 0.0;
 	this->mDataVersion = 0;
 	this->mAllowColoring = false;
-	this->mWidgetComponent->SetupAttachment(RootComponent);
+	this->mSignProxyPlane->SetupAttachment(RootComponent);
 }
 void AFGBuildableWidgetSign::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -34,7 +37,14 @@ TSubclassOf< UFGSignTypeDescriptor > AFGBuildableWidgetSign::GetSignTypeDescript
 FVector2D AFGBuildableWidgetSign::GetSignDimensions_Implementation(){ return FVector2D(); }
 void AFGBuildableWidgetSign::GainedSignificance_Implementation(){ }
 void AFGBuildableWidgetSign::LostSignificance_Implementation(){ }
+UFGFactoryClipboardSettings* AFGBuildableWidgetSign::CopySettings_Implementation(){ return nullptr; }
+bool AFGBuildableWidgetSign::PasteSettings_Implementation(UFGFactoryClipboardSettings* settings){ return bool(); }
+void AFGBuildableWidgetSign::OnBuildEffectFinished(){ }
 void AFGBuildableWidgetSign::SetPrefabSignData(FPrefabSignData& signData){ }
 void AFGBuildableWidgetSign::GetSignPrefabData(FPrefabSignData& out_signData){ }
 void AFGBuildableWidgetSign::UpdateSignElements(FPrefabSignData& prefabSignData){ }
+float AFGBuildableWidgetSign::GetAdjustedEmissiveValue(int32 Level) const{ return float(); }
 void AFGBuildableWidgetSign::OnRep_SignDataDirty(){ }
+uint32 AFGBuildableWidgetSign::GenerateGUID(FPrefabSignData& signData){ return uint32(); }
+void AFGBuildableWidgetSign::ConvertToEmissiveOnly(FPrefabSignData& prefabSignData) const{ }
+void AFGBuildableWidgetSign::SetupMaterialInstanceForProxyPlane(UMaterialInstanceDynamic* Instance, UTextureRenderTarget2D* RenderTarget){ }

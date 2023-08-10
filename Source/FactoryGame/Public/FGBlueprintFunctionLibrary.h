@@ -9,6 +9,8 @@
 #include "FGOnlineSessionSettings.h"
 #include "FGRecipe.h"
 #include "FGFactoryColoringTypes.h"
+#include "FGMapMarker.h"
+#include "FGSchematic.h"
 #include "FGBlueprintFunctionLibrary.generated.h"
 
 UENUM( BlueprintType )
@@ -23,6 +25,8 @@ enum class EOutlineColor : uint8
 	OC_INVALIDHOLOGRAM  = 253	UMETA( DisplayName = "Invalid Hologram" ),
 	OC_RED				= 254	UMETA( DisplayName = "Disabled" )
 };
+
+DECLARE_DYNAMIC_DELEGATE_RetVal( bool, FLatentActionPredicate );
 
 UCLASS()
 class FACTORYGAME_API UFGBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
@@ -114,6 +118,14 @@ public:
 	/** Gets the Significance manager */
 	static class UFGSignificanceManager* GetSignificanceManager( UWorld* InWorld );
 
+	/* Add generic gain / loss significance to the accelerated significance manager.
+	**	@Param Object - Actor to add to the system */
+	UFUNCTION( BlueprintCallable, Category = "Game", meta = ( WorldContext = "WorldContextObject" ) )
+	static void AddStaticSignificance( UObject* WorldContextObject, UObject* Object);
+
+	UFUNCTION( BlueprintCallable, Category = "Game", meta = ( WorldContext = "WorldContextObject" ) )
+	static void RemoveStaticSignificance( UObject* WorldContextObject, UObject* Object );
+	
 	/** Adds a generic tickable object to be handled by significance manager */
 	UFUNCTION( BlueprintCallable, Category = "Game", meta = ( WorldContext = "WorldContextObject" ) )
 	static void AddGenericTickObjectToSignificanceManager( UObject* WorldContextObject, UObject* obj );
@@ -256,6 +268,9 @@ public:
 	UFUNCTION( BlueprintCallable, Category = "Organization" )
 	static void GetSubCategoriesForSchematicCategory( UObject* worldContext, TSubclassOf< class UFGSchematicCategory > category, UPARAM( ref ) TArray< TSubclassOf< class UFGSchematicCategory > >& out_subCategories );
 
+	UFUNCTION( BlueprintCallable, Category = "Organization" )
+	static void GetVisibleSubCategoriesForSchematicCategory( UObject* worldContext, TSubclassOf< class UFGSchematicCategory > category, ESchematicType schematicType, TArray< TSubclassOf< class UFGSchematicCategory > >& out_subCategories );
+
 	/** Returns all categories from the given recipes*/
 	UFUNCTION( BlueprintCallable, Category = "Recipes", meta = (DeterminesOutputType = "outputCategoryClass") )
 	static TArray< TSubclassOf< UFGCategory > > GetAllCategoriesFromRecipes( TArray< TSubclassOf< class UFGRecipe > > recipes, TSubclassOf< class UFGCategory > outputCategoryClass );
@@ -346,9 +361,14 @@ public:
 	UFUNCTION( BlueprintCallable, Category="Online" )
 	static void CreateSessionAndTravelToMap( APlayerController* player, const FString& mapName, const FString& options, const FString& sessionName, TEnumAsByte<ESessionVisibility> sessionVisibility );
 
+	/** Helper function that takes care of creating a session and travel to the map. If skipOnboarding is true we skip intro/onboarding/tutorial and go directly to tier 1 */
 	UFUNCTION( BlueprintCallable, Category="Online" )
-	static void CreateSessionAndTravelToMapWithStartingLocation( APlayerController* player, const FString& mapName, const FString& startingLocation, const FString& sessionName, TEnumAsByte<ESessionVisibility> sessionVisibility );
+	static void CreateSessionAndTravelToMapWithStartingLocation( APlayerController* player, const FString& mapName, const FString& startingLocation, const FString& sessionName, TEnumAsByte<ESessionVisibility> sessionVisibility, bool skipOnboarding);
 
+	/** Helper function that takes care of loading a session. If enableAdvancedGameSettings is true we will enable it when we load the game */
+	UFUNCTION( BlueprintCallable, Category="Online" )
+	static void LoadSaveFile( TScriptInterface<IFGSaveManagerInterface> saveManager, const FSaveHeader& saveGame, class APlayerController* player, bool enableAdvancedGameSettings );
+	
 	/** Travel gracefully to main menu, kicking clients if host, and tearing down the game session */
 	UFUNCTION( BlueprintCallable, Category="Utils", meta=(DefaultToSelf="worldContext") )
 	static void TravelToMainMenu( APlayerController* playerController );
@@ -417,6 +437,14 @@ public:
 	UFUNCTION(BlueprintPure, Category="Math|Conversions", meta=(DisplayName = "ToInt (frametime)", CompactNodeTitle = "->", Keywords="cast convert", BlueprintAutocast) )
 	static int32 Conv_FrameTimeToInt( FFrameTime frameTime );
 
+	/** Returns true if the given map markers have the same hidden ID */
+	UFUNCTION( BlueprintPure, Category = "Map", meta=(DisplayName = "Equal (Map Marker)", CompactNodeTitle = "==", Keywords = "== equal") )
+	static bool EqualEqual_FMapMarkerFMapMarker( const FMapMarker& mapMarkerA, const FMapMarker& mapMarkerB );
+
+	/** Returns given map marker hidden ID used for identifying markers and if it's considered to be a valid marker ID*/
+	UFUNCTION( BlueprintPure,  Category = "Map" )
+	static int32 GetMapMarkerID( const FMapMarker& mapMarker, UPARAM( DisplayName = "HasValidID" ) bool& out_hasValidID );
+
 	/** 
 	*	Evaluates a math expression. Can handle white spaces between characters.
 	*	@return true if expression could be evaluated.
@@ -469,10 +497,53 @@ public:
 	 * Returns all actors within desired radius
 	 **/
 	UFUNCTION( BlueprintCallable, Category = "Fun" )
-	static TArray< class AActor* > GetActorsInRadius( UObject* WorldContextObject, FVector inLocation,  float inRadius, TSubclassOf< AActor > inActorClass );
+	static void GetActorsInRadius( UObject* WorldContextObject, FVector inLocation,  float inRadius, TSubclassOf< AActor > inActorClass, TArray< class AActor* >& result );
 
 	UFUNCTION( BlueprintPure, Category = "Widgets" )
 	static bool IsWidgetUnderCursor( class ULocalPlayer* localPlayer, class UUserWidget* widget );
+
+	/** Converts an FSessionSaveStruct to a UObject(UFGSessionSaveStructWrapper). Used for list views since they require an object per item */
+	UFUNCTION(BlueprintPure, meta=(DisplayName = "ToObject (FSessionSaveStruct)", CompactNodeTitle = "->", BlueprintAutocast), Category="Save Session")
+	static UObject* Conv_SessionSaveStructToObject( FSessionSaveStruct inSessionSaveStruct );
+
+	/** Converts an FSaveHeader to a UObject(UFGSaveHeaderWrapper). Used for list views since they require an object per item */
+	UFUNCTION(BlueprintPure, meta=(DisplayName = "ToObject (FSaveHeader)", CompactNodeTitle = "->", BlueprintAutocast), Category="Save Header")
+	static UObject* Conv_SaveHeaderToObject( FSaveHeader inSaveHeader );
+
+	UFUNCTION( BlueprintCallable, Category="Utilities|FlowControl", meta=( Latent, WorldContext="WorldContextObject", LatentInfo="LatentInfo" ) )
+	static void	WaitForValidSubsystems(const UObject* WorldContextObject, struct FLatentActionInfo LatentInfo );
+
+	/**
+	 * Waits for the HUD actor to become available and then executes the connected nodes. Nothing will run on dedicated servers, since HUD is not available there. 
+	 */
+	UFUNCTION( BlueprintCallable, Category="Utilities|FlowControl", meta=( Latent, WorldContext="WorldContextObject", LatentInfo="LatentInfo" ) )
+	static void	WaitForFGHud(const UObject* WorldContextObject, struct FLatentActionInfo LatentInfo, class AFGHUD*& out_HUD );
+
+	/**
+	 * Waits for the game UI object to become available and then executes the connected nodes. Nothing will run on dedicated servers, since game UI is not available there. 
+	 */
+	UFUNCTION( BlueprintCallable, Category="Utilities|FlowControl", meta=( Latent, WorldContext="WorldContextObject", LatentInfo="LatentInfo" ) )
+	static void	WaitForGameUI(const UObject* WorldContextObject, struct FLatentActionInfo LatentInfo, class UFGGameUI*& out_GameUI );
+
+	UFUNCTION( BlueprintCallable, Category="Utilities|FlowControl", meta=( Latent, WorldContext="WorldContextObject", LatentInfo="LatentInfo" ) )
+	static void WaitForCondition( const UObject* WorldContextObject, struct FLatentActionInfo LatentInfo, const FLatentActionPredicate& Predicate, bool ExecuteOnDedicatedServer = true );
+
+	/** Gets all item descriptors in the game including unlocked ones */
+	UFUNCTION(BlueprintCallable, Category = "FactoryGame|Items")
+	static void GetAllPickupableItemDescriptors( UObject* WorldContextObject, TArray< TSubclassOf< class UFGItemDescriptor > >& out_itemDescriptors );
+
+	UFUNCTION( BlueprintPure, Category = "UI" )
+	static bool ShouldShowUnstableSaveVersionWarning();
+	
+	UFUNCTION( BlueprintPure, Category = "UI" )
+	static bool ShouldShowOfflineSessionWarning();
+
+	/** Returns the underlying source string for this text as it is defined in the editor */
+	UFUNCTION( BlueprintPure, Category = "UI" )
+	static FString BuildSourceString( const FText& inText );
+	
+	//////////////////////////////////////////////////////////////////////////
+	/// Factory Customization
 
 	UFUNCTION( BlueprintCallable, Category = "Buildable Color" )
 	static void SetCusomizationColorSlot( FFactoryCustomizationColorSlot& colorData, FLinearColor primaryColor, FLinearColor secondaryColor, float metallic = 1.f, float roughness = 1.f )
@@ -490,11 +561,7 @@ public:
 	/** Create CustomUserColorData from params */
 	UFUNCTION( BlueprintPure, Category = "Buildable Color", meta = ( NativeMakeFunc, AdvancedDisplay = "2", Normal = "0,0,1", ImpactNormal = "0,0,1" ) )
 	static FFactoryCustomizationColorSlot MakeCustomizationColorSlot( FLinearColor primaryColor, FLinearColor secondaryColor, float metallic, float roughness );
-
-
-	//////////////////////////////////////////////////////////////////////////
-	/// Factory Customization
-
+	
 	/** Gets the icon for a customization class*/
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Customization" )
 	static UTexture2D* GetIconForCustomizationDesc( const TSubclassOf< class UFGFactoryCustomizationDescriptor > customizationDesc );
@@ -545,4 +612,27 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Editor")
 	static void CSS_SetAnimationAsset(USkeletalMeshComponent* Comp, UAnimationAsset* AnimationAsset);
+
+	// Returns current frame number, Non shipping build only!
+	UFUNCTION(BlueprintPure, Category = "Profiling")
+	static int64 GetFrameNumber();
+
+	UFUNCTION(BlueprintPure, Category = "Utilities")
+	static float FindClosestPlayerSq(AActor* source);
+
+	UFUNCTION(BlueprintCallable, Category = "Water")
+	static void SetWaterCollisionSettings(UStaticMeshComponent* Target);
+
+	UFUNCTION(BlueprintCallable)
+	static bool SegmentIntersection(const FVector& SegmentBeginA, const FVector& SegmentEndA, const FVector& SegmentBeginB, const FVector& SegmentEndB );
+
+	/*Editor only.*/
+	UFUNCTION(BlueprintCallable)
+	static FString GetActorGridStringRuntTime(AActor* InActor);
+
+	UFUNCTION(BlueprintPure)
+	static FVector GetEditorCameraLocation();
+	
+	UFUNCTION(BlueprintCallable)
+	static void ED_SetMinDrawDistance(UStaticMeshComponent* Comp, float Distance);
 };

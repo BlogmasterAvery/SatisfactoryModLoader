@@ -8,6 +8,8 @@ AFGBeamHologram::AFGBeamHologram() : Super() {
 	this->mBeamMesh = nullptr;
 	this->mCurrentLength = 0.0;
 	this->mBuildStep = EBeamHologramBuildStep::BHBS_Placement;
+	this->mNeedsValidFloor = false;
+	this->mAllowEdgePlacementInDesignerEvenOnIntersect = true;
 }
 void AFGBeamHologram::BeginPlay(){ }
 void AFGBeamHologram::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
@@ -20,14 +22,15 @@ bool AFGBeamHologram::TrySnapToActor(const FHitResult& hitResult){ return bool()
 void AFGBeamHologram::SetHologramLocationAndRotation(const FHitResult& hitResult){ }
 bool AFGBeamHologram::DoMultiStepPlacement(bool isInputFromARelease){ return bool(); }
 int32 AFGBeamHologram::GetRotationStep() const{ return int32(); }
-void AFGBeamHologram::GetSupportedBuildModes_Implementation(TArray< TSubclassOf<UFGHologramBuildModeDescriptor> >& out_buildmodes) const{ }
+void AFGBeamHologram::GetSupportedBuildModes_Implementation(TArray< TSubclassOf<UFGBuildGunModeDescriptor> >& out_buildmodes) const{ }
 void AFGBeamHologram::ConfigureActor(AFGBuildable* inBuildable) const{ }
 int32 AFGBeamHologram::GetBaseCostMultiplier() const{ return int32(); }
 bool AFGBeamHologram::CanBeZooped() const{ return bool(); }
+bool AFGBeamHologram::CanIntersectWithDesigner(AFGBuildableBlueprintDesigner* designer){ return bool(); }
 void AFGBeamHologram::SerializeConstructMessage(FArchive& ar, FNetConstructionID id){ }
 void AFGBeamHologram::OnPendingConstructionHologramCreated_Implementation(AFGHologram* fromHologram){ }
 void AFGBeamHologram::OnRep_CurrentLength(){ }
-bool AFGBeamHologram::IsHologramIdenticalToBuildable( AFGBuildable* buildable, const FVector& hologramLocationOffset) const{ return bool(); }
+bool AFGBeamHologram::IsHologramIdenticalToActor(AActor* actor, const FVector& hologramLocationOffset) const{ return bool(); }
 void AFGBeamHologram::CreateAttachmentPointTransform(FTransform& out_transformResult, const FHitResult& HitResult, AFGBuildable* pBuildable, const FFGAttachmentPoint& BuildablePoint, const FFGAttachmentPoint& LocalPoint){ }
 void AFGBeamHologram::CreateVerticalBeam(const FHitResult& hitResult, bool allowDiagonal){ }
 void AFGBeamHologram::CreateFreeformBeam(const FHitResult& hitResult){ }

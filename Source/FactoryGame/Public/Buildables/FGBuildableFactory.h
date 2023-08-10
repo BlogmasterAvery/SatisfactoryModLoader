@@ -4,7 +4,6 @@
 
 #include "FactoryGame.h"
 #include "Buildables/FGBuildable.h"
-#include "FGRecipeProducerInterface.h"
 #include "FGSignificanceInterface.h"
 #include "Replication/FGReplicationDetailInventoryComponent.h"
 #include "Replication/FGReplicationDetailActor_BuildableFactory.h"
@@ -40,15 +39,21 @@ public:
 
 	// Begin IFGSaveInterface
 	virtual void PreSaveGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
+	virtual void PostLoadGame_Implementation(int32 saveVersion, int32 gameVersion) override;
 	// End IFGSaveInterface
 
 	//Begin IFGSignificanceInterface
 	virtual void GainedSignificance_Implementation() override;
 	virtual	void LostSignificance_Implementation() override;
+	virtual void UpdateSignificanceTickRate_Implementation(float NewTickRate, bool bTickEnabled) override;
 	virtual float GetSignificanceRange() override { return mSignificanceRange; }
 	virtual void GainedSignificance_Native() override;
 	virtual void LostSignificance_Native() override;
 	virtual	void SetupForSignificance() override;
+	virtual void SetInitialState(bool bState) override { mIsSignificant = bState; }
+	virtual bool DoesReduceTick() const override;
+	virtual int32 NumTickLevels() const override;
+	virtual float GetTickExponent() const override { return mTickExponent; }
 	//End IFGSignificanceInterface
 
 	// Begin Factory_ interface
@@ -61,7 +66,7 @@ public:
 	// End IFGUseableInterface
 
 	// Begin IFGDismantleInterface
-	virtual void GetDismantleRefund_Implementation( TArray< FInventoryStack >& out_refund ) const override;
+	virtual void GetDismantleRefund_Implementation( TArray< FInventoryStack >& out_refund, bool noBuildCostEnabled ) const override;
 	// End IFGDismantleInterface
 
 	// Begin IFGReplicationDetailActorOwnerInterface
@@ -104,29 +109,14 @@ public:
 	 * @return true if we have power; false if we do not have power or does not run on power.
 	 */
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Factory|Power" )
-	bool HasPower() const
-	{
-		return Factory_HasPower();
-	}
-
-	/* Native only version of RunsOnPower for inlining. */
-	FORCEINLINE virtual bool Factory_HasPower() const
-	{
-		return mHasPower;
-	}
+	bool HasPower() const { return mHasPower; }
 	
 	/**
 	 * Check if this machine runs on power.
 	 * @return - true if this machine runs on power; false if it does not.
 	 */
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Factory|Power" )
-	bool RunsOnPower() const { return Factory_RunsOnPower(); }
-
-	/* Native only version of RunsOnPower for inlining. */
-	FORCEINLINE virtual bool Factory_RunsOnPower() const
-	{
-		return mPowerInfo && mPowerConsumption > 0.0f;
-	}
+	bool RunsOnPower() const { return mPowerConsumption > 0.f; }
 
 	/**
 	 * Get the power info for this factory.
@@ -218,14 +208,18 @@ public:
 	/** Calculates the production cycle time of this factory with a certain potential */
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Factory|Production" )
 	virtual float CalcProductionCycleTimeForPotential( float potential ) const;
-
+	
 	/** A measure of how productive this factory is. */
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Factory|Productivity" )
-	float GetProductivity();
+	float GetProductivity() const;
+
+	/** How long is the measurement for the buildings productivity. */
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Factory|Productivity" )
+	float GetProductivityMeasurementDuration() const;
 
 	/** Get the inventory that we place crystal in to unlock the slider of potential */
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Factory|Productivity" )
-	FORCEINLINE UFGInventoryComponent* GetPotentialInventory() const { return mInventoryPotentialHandler->GetActiveInventoryComponent(); }
+	FORCEINLINE UFGInventoryComponent* GetPotentialInventory() const { return mInventoryPotentialHandlerData.GetActiveInventoryComponent(); }
 
 	/** Gets you the current potential */
 	UFUNCTION( BlueprintCallable, Category = "FactoryGame|Factory|Productivity" )
@@ -344,6 +338,9 @@ protected:
 	virtual void OnReplicatingDetailsChanged() override;
 	// End AFGBuildable interface
 
+	/** Called to check if this building has power, result is cached in Factory_Tick, use HasPower() instead. */
+	virtual bool Factory_HasPower() const;
+	
 	/** Call this when we finished a production cycle, like produced a recipe or extracted an ore. */
 	UFUNCTION(BlueprintCallable, Category = "FactoryGame|Factory|Productivity")
 	virtual void Factory_ProductionCycleCompleted( float overProductionRate );
@@ -374,7 +371,7 @@ protected:
 	virtual void Factory_TickProducing( float dt );
 
 	/** Tick the fact that we are not producing. Used for productivity calculations. */
-	virtual void Factory_TickProductivity( float dt );
+	void Factory_TickProductivity( float dt );
 
 	/** Calls blueprint when we tick production. */
 	UFUNCTION( BlueprintImplementableEvent, CustomEventUsing = mHasFactory_TickProducing, Category = "FactoryGame|Factory|Production", meta=(DisplayName="Factory_TickProducing") )
@@ -405,6 +402,12 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_IsProductionPaused();
 
+	virtual void GetAllReplicationDetailDataMembers(TArray<FReplicationDetailData*>& out_repDetailData) override
+	{
+		Super::GetAllReplicationDetailDataMembers( out_repDetailData );
+		out_repDetailData.Add( &mInventoryPotentialHandlerData );
+	}
+
 private:
 	/** Calls Start/Stop Producing on client */
 	UFUNCTION()
@@ -415,11 +418,21 @@ private:
 
 	class AFGReplicationDetailActor_BuildableFactory* GetCastRepDetailsActor() const { return Cast<AFGReplicationDetailActor_BuildableFactory>( mReplicationDetailActor ); } // @todo: make this a static function instead
 
+	/** Filters what item can be used in the potential inventory slots. We use it to check if overclock have been unlocked */
+	UFUNCTION()
+	bool FilterPotentialInventoryClasses( TSubclassOf< UObject > object, int32 idx ) const;
+
 	//////////////////////////////////////////////////////////////////////////
 	/// Push Model Replication Setters
 	void SetIsProducing( uint8 isProducing );
 	void SetHasPower( uint8 hasPower );
 	void SetCurrentProductivity( uint8 productivity );
+
+	/**
+	 * Toggle productivity monitoring.
+	 * When turned off, the productivity is reset to 0. 
+	 */
+	void SetProductivityMonitorEnabled( bool enabled );
 
 public:
 	/** Power consumption of this factory. */
@@ -436,7 +449,7 @@ public:
 	float mPowerConsumptionExponent;
 
 	/** Class to use for the power simulation on this factory, this is only used if the building has any FGPowerConnectionComponent attached. */
-	UPROPERTY( EditDefaultsOnly, Category = "Power" ) //@todo Replicated
+	UPROPERTY( EditDefaultsOnly, Category = "Power" )
 	TSubclassOf< class UFGPowerInfoComponent > mPowerInfoClass;
 
 	UPROPERTY( EditDefaultsOnly, Category = "Animation" )
@@ -483,18 +496,12 @@ protected:
 	UPROPERTY( SaveGame, Meta = (NoAutoJson = true) )
 	float mTimeSinceStartStopProducing;
 
-	/** How many cycles back do we base the productivity on */
-	UPROPERTY( EditDefaultsOnly, Category = "Productivity" )
-	int32 mNumCyclesForProductivity;
-
-	/** These are a list of timestamps for the most recently completed production cycles, used to calculate productivity */
-	TArray< float > mCompletedCycleTimeStamps;
-
-	/** An estimation on when the current cycle will be done. If we didn't produce for a frame we add delta to this */
-	float mCurrentProductionCycleETA;
-
 	/** Keeps track if we produced this tick or not */
 	bool mDidProduceThisTick;
+	
+	/** Should this building ever be able to have productivity monitoring? */
+	UPROPERTY( EditDefaultsOnly, Category = "Productivity" )
+	bool mCanEverMonitorProductivity;
 
 	/** Set this to true if we want this building to be able to change the production rate potential with the "Slider of Potential" */
 	UPROPERTY( EditDefaultsOnly, Category = "Productivity" )
@@ -541,7 +548,7 @@ private:
 	class UFGInventoryComponent* mInventoryPotential;
 
 	UPROPERTY()
-	class UFGReplicationDetailInventoryComponent* mInventoryPotentialHandler;
+	FReplicationDetailData mInventoryPotentialHandlerData;
 
 	/** This is the current potential (overclock, overcharge) of this factory [0..N]
 	* [FreiholtzK:Fri/4-12-2020]  encapsulated to make sure we catch changes of this value and can broadcast them
@@ -562,29 +569,53 @@ private:
 	/** The cached production status, evaluated once every tick. */
 	EProductionStatus mCachedProductionStatus;
 
-	/** A replicated compressed version of the productivity */
+	/**
+	 * For how long do the building calculate and average of the productivity. [seconds]
+	 * Due to a simplified implementation the real average for the mCurrentProductivity will be over [default, default * 2] seconds.
+	 */
+	UPROPERTY( EditDefaultsOnly, Category = "Productivity" )
+	float mDefaultProductivityMeasurementDuration = 300.f;
+	
+	/**
+	 * Calculate and average over time by using two averages, we save one average from the past and update the current one.
+	 * When the current one gets above the specified measured time, save it to the last and start over on the current one.
+	 */
+	UPROPERTY( SaveGame )
+	float mLastProductivityMeasurementProduceDuration;
+	UPROPERTY( SaveGame )
+	float mLastProductivityMeasurementDuration;
+	UPROPERTY( SaveGame )
+	float mCurrentProductivityMeasurementProduceDuration;
+	UPROPERTY( SaveGame )
+	float mCurrentProductivityMeasurementDuration;
+	
+	/** A replicated compressed version of the productivity, where a value of 0-255 is 0-100 percent. */
 	UPROPERTY( Replicated, Meta = (NoAutoJson = true) )
 	uint8 mCurrentProductivity;
-
+	
+	/** Should this building calculate its productivity, buildings do not tick productivity when newly built or in standby. */
+	UPROPERTY( SaveGame )
+	uint8 mProductivityMonitorEnabled : 1;
+	
 	/** Are we producing? Do not set this manually, some delegates and other stuff might not get triggered then. */
 	UPROPERTY( SaveGame, ReplicatedUsing = OnRep_IsProducing, Meta = (NoAutoJson = true) )
-	uint8 mIsProducing:1;
+	uint8 mIsProducing : 1;
 
 	/** if true, then blueprint has implemented CanProduce */
-	uint8 mHasCanProduce:1;
+	uint8 mHasCanProduce : 1;
 
 	/** If building has power, for more details about the circuitry see mPowerInfo. */
 	UPROPERTY( Replicated, Meta = (NoAutoJson = true) )
-	uint8 mHasPower:1;
+	uint8 mHasPower : 1;
 
 	/** Last frame's has power */
-	uint8 mLastHasPower:1;
+	uint8 mLastHasPower : 1;
 
 	/** Last frame's is producing */
 	uint8 mLastIsProducing : 1;
 
 	/** if true, then blueprint has implemented Factory_CollectInput */
-	uint8 mHasFactory_CollectInput:1;
+	uint8 mHasFactory_CollectInput : 1;
 
 	/** if true, then the blueprint has implemented Factory_PullPipeInput */
 	uint8 mHasFactory_PullPipeInput : 1;
@@ -593,10 +624,10 @@ private:
 	uint8 mHasFactory_PushPipeOutput : 1;
 
 	/** if true, then blueprint has implemented OnHasPowerChanged */
-	uint8 mHasOnHasPowerChanged :1;
+	uint8 mHasOnHasPowerChanged : 1;
 
 	/** if true, then blueprint has implemented OnHasProducingChanged */
-	uint8 mHasOnIsProducingChanged :1;
+	uint8 mHasOnIsProducingChanged : 1;
 
 	/** if true, then blueprint has implemented Factory_StartProducing */
 	uint8 mHasFactory_StartProducing : 1;
@@ -619,7 +650,18 @@ private:
 	/** Indicates if we have already started the production effects effects */
 	uint8 mDidStartProductionEffects : 1;
 
-	/** Caching all skel meshes so that we can set tick optimizations later from significance manager */
+protected:
+	/* Determines if we should Factory_PullPipeInput in factory tick.*/
+	uint8 mHasPipeInput : 1;
+
+	/* Determines if we should Factory_PushPipeOutput in factory tick.*/
+	uint8 mHasPipeOutput : 1;
+
+	/* Determines if we should collect inputs in factory tick.*/
+	uint8 mHasSolidInput : 1 ;
+	
+private:	
+	/** Caching all skeletal meshes so that we can set tick optimizations later from significance manager */
 	UPROPERTY()
 	TArray< USkeletalMeshComponent* > mCachedSkeletalMeshes;
 protected:
@@ -630,4 +672,7 @@ protected:
 	/** The range to keep the factory in significance */
 	UPROPERTY( EditDefaultsOnly, Category = "Significance" )
 	float mSignificanceRange;
+
+	UPROPERTY( EditDefaultsOnly,Category= "Significance")
+	float mTickExponent = 5;
 };

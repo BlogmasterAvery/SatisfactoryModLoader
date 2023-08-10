@@ -5,6 +5,7 @@
 #include "FactoryGame.h"
 #include "FGUseableInterface.h"
 #include "Buildables/FGBuildableConveyorBase.h"
+#include "FGSplineBuildableInterface.h"
 #include "Components/SplineComponent.h"
 #include "FGBuildableConveyorBelt.generated.h"
 
@@ -52,8 +53,8 @@ public:
  * Base for conveyor belts.
  * Assumption: Conveyors are never rotated, rotation is always 0,0,0.
  */
-UCLASS(Abstract)
-class FACTORYGAME_API AFGBuildableConveyorBelt : public AFGBuildableConveyorBase
+UCLASS()
+class FACTORYGAME_API AFGBuildableConveyorBelt : public AFGBuildableConveyorBase, public IFGSplineBuildableInterface
 {
 	GENERATED_BODY()
 public:
@@ -68,6 +69,10 @@ public:
 	virtual bool IsComponentRelevantForNavigation( UActorComponent* component ) const override;
 	// End AActor interface
 
+	// UObject interface
+	// virtual void Serialize(FArchive& ar) override;
+	// end UObject inteface
+
 	// Begin IFGUseableInterface
 	virtual void UpdateUseState_Implementation( class AFGCharacterPlayer* byCharacter, const FVector& atLocation, class UPrimitiveComponent* componentHit, FUseState& out_useState ) const override;
 	virtual void OnUse_Implementation( class AFGCharacterPlayer* byCharacter, const FUseState& state ) override;
@@ -81,12 +86,14 @@ public:
 	// Begin IFGSignificanceInterface
 	virtual void GainedSignificance_Implementation() override;
 	virtual	void LostSignificance_Implementation() override;
-	virtual	void SetupForSignificance() override;
-	virtual void UpdateMeshLodLevels(int32 newLodLevel) override;
+	virtual float GetSignificanceRange() override;
+	virtual	void SetupForSignificance() override;					// TODO deprecate
+	virtual void UpdateMeshLodLevels(int32 newLodLevel) override;	// TODO deprecate
 	// End IFGSignificanceInterface
 
 	// Begin Buildable interface
 	virtual int32 GetDismantleRefundReturnsMultiplier() const override;
+	virtual void OnBuildEffectFinished() override;
 	// End Buildable interface
 
 	// Begin AFGBuildableConveyorBase interface
@@ -128,9 +135,15 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Conveyor" )
 	FORCEINLINE UStaticMesh* GetSplineMesh() const { return mMesh; }
 
-	/** Get the spline data for this conveyor. */
-	UFUNCTION( BlueprintCallable, BlueprintPure = false, Category = "Conveyor" )
-	FORCEINLINE TArray< FSplinePointData > GetSplineData() const { return mSplineData; };
+	// Begin IFGSplineBuildableInterface
+	const TArray< FSplinePointData >& GetSplinePointData() const { return mSplineData; };
+	float GetMeshLength() { return mMeshLength; }
+	FVector GetCollisionExtent() override { return COLLISION_EXTENT; }
+	float GetCollisionSpacing() override { return COLLISION_SPACING; }
+	FVector GetCollisionOffset() override { return COLLISION_OFFSET; }
+	UStaticMesh* GetUsedSplineMesh() override { return mMesh; }
+	void SetupConnections() override;
+	// End IFGSplineBuildableInterface
 
 	/** Returns the spline component */
 	UFUNCTION( BlueprintPure, Category = "Build" )
@@ -142,6 +155,8 @@ public:
 
 	// Temp function will be removed.
 	void DestroyVisualItems();
+
+	virtual void PostSerializedFromBlueprint( bool isBlueprintWorld = false ) override;
 	
 protected:
 	// Begin AFGBuildableFactory interface
@@ -169,13 +184,17 @@ protected:
 	UPROPERTY( EditDefaultsOnly, Category = "Conveyor Belt" )
 	class UStaticMesh* mMesh;
 
+	UPROPERTY( EditDefaultsOnly, Category = "Conveyor Belt" )
+	class UStaticMesh* mCollisionProxyMesh;
+	
 	/** Length of the mesh to use for this conveyor. */
 	UPROPERTY( EditDefaultsOnly, Category = "Conveyor Belt" )
 	float mMeshLength;
 
 private:
 	friend class AFGConveyorBeltHologram;
-
+	friend class AFGBlueprintHologram;
+	
 	/** Meshes for items. */
 	UPROPERTY( Meta = ( NoAutoJson ) )
 	TMap< FName, class UInstancedStaticMeshComponent* > mItemMeshMap;
@@ -189,8 +208,8 @@ private:
 	class USplineComponent* mSplineComponent;
 
 	/** The spline meshes for this train track. */
-	UPROPERTY( VisibleAnywhere, Category = "Spline" )
-	class UFGInstancedSplineMeshComponent* mInstancedSplineComponent;
+	UPROPERTY( VisibleAnywhere, Category = "Spline", meta=(AllowPrivateAccess =true) )
+	class UFGConveyorInstancedSplineMeshComponent* mInstancedSplineComponent_;
 
 	/** Wwise multiple position playback for the conveyor spline. */
 	UPROPERTY( VisibleDefaultsOnly, Category = "Audio" )
@@ -199,6 +218,11 @@ private:
 	/** The ak event to post for the sound spline */
 	UPROPERTY( EditDefaultsOnly, Category = "Audio" )
 	class UAkAudioEvent* mSplineAudioEvent;
+	
+	// Collision Constants. These used to be magic numbers in the .cpp but were moved here so they could be accessed via the SplineBuildableInterface
+	static inline const FVector COLLISION_EXTENT = FVector( 80.f, 80.f, 15.f );
+	static inline const float COLLISION_SPACING =  160.f;
+	static inline const FVector COLLISION_OFFSET = FVector( 0.f, 0.f, 0.f );
 
 	bool mShouldCastBeltShadows;
 

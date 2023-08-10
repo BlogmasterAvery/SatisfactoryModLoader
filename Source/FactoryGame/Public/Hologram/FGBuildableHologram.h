@@ -105,12 +105,14 @@ public:
 	virtual bool IsValidHitResult( const FHitResult& hitResult ) const override;
 	virtual bool TrySnapToActor( const FHitResult& hitResult ) override;
 	virtual void SetHologramLocationAndRotation( const FHitResult& hitResult ) override;
-	virtual void PreHologramPlacement() override;
-	virtual void PostHologramPlacement() override;
+	virtual void PreHologramPlacement( const FHitResult& hitResult ) override;
+	virtual void PostHologramPlacement( const FHitResult& hitResult ) override;
 	virtual void ScrollRotate( int32 delta, int32 step ) override;
 	virtual void AdjustForGround( FVector& out_adjustedLocation, FRotator& out_adjustedRotation ) override;
 	virtual AActor* Construct( TArray< AActor* >& out_children, FNetConstructionID netConstructionID ) override;
 	virtual void GetIgnoredClearanceActors( TArray< AActor* >& ignoredActors ) const override;
+	virtual bool CanNudgeHologram() const override;
+	virtual ENudgeFailReason NudgeTowardsWorldDirection( const FVector& Direction ) override;
 	// End AFGHologram interface
 
 	class AFGBuildable* GetSnappedBuilding() { return mSnappedBuilding; }
@@ -127,8 +129,8 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Hologram" )
 	const TArray< class UFGPipeConnectionComponent* >& GetCachedPipeConnectionComponents() const { return mCachedPipeConnectionComponents; }
 
-	/** Whether or not the specified buildable should be considered for our guideline alignments. */
-	virtual bool ShouldBuildableBeConsideredForGuidelines( class AFGBuildable* buildable ) const;
+	/** Whether or not the specified actor should be considered for our guideline alignments. */
+	virtual bool ShouldActorBeConsideredForGuidelines( class AActor* actor ) const;
 
 	/** Checks if connections face the same direction and are in line with eachother in order for guidelines to be used. */
 	bool AreConnectionsAlignedForGuidelines( class UFGConnectionComponent* connection, class UFGConnectionComponent* otherConnection, const FVector& connectionOffset, float allowedAngleDeviation ) const;
@@ -147,16 +149,26 @@ public:
 
 	void ClearGuidelineVisuals();
 
+	void SetNeedsValidFloor( bool needsValidFloor ) { mNeedsValidFloor = needsValidFloor; }
+	bool GetNeedsValidFloor() const { return mNeedsValidFloor; }
+
 	/**
      * Function used to filter unwanted attachment points on the buildable based on hitresult. Such as removing all points which are pointing sideways.
      */
     virtual void FilterAttachmentPoints( TArray< const FFGAttachmentPoint* >& Points, class AFGBuildable* pBuildable, const FHitResult& HitResult ) const;
 
+	FORCEINLINE bool ShouldUseConveyorConnectionFrameMesh() const { return mUseConveyorConnectionFrameMesh; }
+	FORCEINLINE bool ShouldUseConveyorConnectionArrowMesh() const { return mUseConveyorConnectionArrowMesh; }
+	
+	FORCEINLINE bool ShouldUsePipeConnectionFrameMesh() const { return mUsePipeConnectionFrameMesh; }
+	FORCEINLINE bool ShouldUsePipeConnectionArrowMesh() const { return mUsePipeConnectionArrowMesh; }
+
 protected:
 	// Begin AFGHologram interface
-	virtual USceneComponent* SetupComponent( USceneComponent* attachParent, UActorComponent* componentTemplate, const FName& componentName ) override;
+	virtual USceneComponent* SetupComponent( USceneComponent* attachParent, UActorComponent* componentTemplate, const FName& componentName, const FName& attachSocketName ) override;
 	virtual void CheckValidPlacement() override;
 	virtual int32 GetRotationStep() const override;
+	virtual bool IsHologramIdenticalToActor( AActor* actor, const FVector& hologramLocationOffset ) const override;
 	// End AFGHologram interface	
 
 	/** Helper function to snap to the factory building grid. */
@@ -184,6 +196,13 @@ protected:
 	 */
 	virtual void CheckValidFloor();
 
+	/**
+	 * Do any validation checks to ensure a hologram is not connecting a building inside a blueprint designer
+	 * To one outside the designer. Ofter clearance will disallow this but this is an additional safety check
+	 * Wires for example wont have a collision problem so in their hologram we verify the connections / placement
+	 */
+	virtual void CheckBlueprintCommingling();
+
 	/** Minimum Z value for a floor normal. If less the hologram is not placeable. */
 	FORCEINLINE float GetMinPlacementFloorZ() const { return FMath::Cos( FMath::DegreesToRadians( mMaxPlacementFloorAngle ) ); }
 
@@ -196,12 +215,6 @@ protected:
 	 * Snaps the hologram to the target clearance box.
 	 */
 	void SnapToClearanceBox( const UFGClearanceComponent* targetSnapClearanceComponent, FVector& newLocation, FRotator& newRotation );
-
-	/**
-	 * Function used to determine if a buildable is identical to ourselves in terms of position, rotation, etc.
-	 * Used to avoid overlapping buildables.
-	 */
-	virtual bool IsHologramIdenticalToBuildable( class AFGBuildable* buildable, const FVector& hologramLocationOffset ) const;
 
 	/**
 	 * Function to allow any pre-initialization on the actor before the configuration occurs. This is to allow for
@@ -269,7 +282,6 @@ protected:
 
 	// Begin AFGHologram interface
 	virtual void SetupClearance( class UFGClearanceComponent* clearanceComponent ) override;
-	virtual void HandleClearanceOverlap( const FOverlapResult& overlap, const FVector& locationOffset, bool HologramHasSoftClearance ) override;
 	virtual void SetMaterial( class UMaterialInterface* material ) override;
 	virtual class UPrimitiveComponent* GetClearanceOverlapCheckComponent() const override;
 	// End AFGHologram interface
@@ -278,9 +290,9 @@ protected:
 	void SetHologramClearanceTransformAndExtent( const FVector& newRelativeLocation, const FRotator& newRelativeRotation, const FVector& newExtent );
 
 	/** Setup the mesh for visualizing connections. */
-	void SetupFactoryConnectionMesh( class UFGFactoryConnectionComponent* connectionComponent );
-	void SetupPowerConnectionMesh( class UFGPowerConnectionComponent* connectionComponent );
-	void SetupPipeConnectionMesh( class UFGPipeConnectionComponentBase* connectionComponent );
+	void SetupFactoryConnectionMesh( class UFGFactoryConnectionComponent* connectionComponent, bool bUseFrameMesh, bool bUseArrowMesh, class USceneComponent* attachParent = nullptr );
+	void SetupPowerConnectionMesh( class UFGPowerConnectionComponent* connectionComponent, class USceneComponent* attachParent = nullptr );
+	void SetupPipeConnectionMesh( class UFGPipeConnectionComponentBase* connectionComponent, bool bUseFrameMesh, bool bUseArrowMesh, class USceneComponent* attachParent = nullptr );
 
 	/** Useful for getting the default buildable */
 	template< class TBuildableClass >
@@ -371,6 +383,15 @@ protected:
 
 	UPROPERTY( Transient )
 	class UFGClearanceComponent* mSnappedClearanceBox;
+
+	UPROPERTY()
+	class AFGBuildable* mSnappedFloor;
+
+	UPROPERTY()
+	class AFGBuildable* mSnappedWall;
+
+	/** If we've snapped a wall, this is the worldspace direction from us towards the "wall". */
+	FVector mWorldSpaceSnapDirection;
 
 	bool mDidSnapDuetoClearance;
 

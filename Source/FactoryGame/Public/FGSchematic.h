@@ -5,7 +5,7 @@
 #include "FactoryGame.h"
 #include "UObject/Object.h"
 #include "ItemAmount.h"
-#include "AssetBundleData.h"
+#include "AssetRegistry/AssetBundleData.h"
 #include "IncludeInBuild.h"
 #include "Styling/SlateBrush.h"
 #include "FGEventSubsystem.h"
@@ -37,6 +37,15 @@ enum class ESchematicType :uint8
 	EST_Prototype			UMETA( DisplayName = "Prototype" )
 };
 
+UENUM( BlueprintType )
+enum class ESchematicState :uint8
+{
+	ESS_Locked			UMETA( DisplayName = "Locked" ),
+	ESS_Purchased		UMETA( DisplayName = "Purchased" ),
+	ESS_Available		UMETA( DisplayName = "Available" ),
+	ESS_Hidden			UMETA( DisplayName = "Hidden" )
+};
+
 //@todo-cleanup Is this used? I cannot find any references to it
 /** Holds info about a schematic cost. */
 USTRUCT( BlueprintType )
@@ -64,8 +73,8 @@ public:
 	virtual void PostLoad() override;
 	virtual void Serialize( FArchive& ar ) override;
 #if WITH_EDITOR
-	virtual void PreSave( const class ITargetPlatform* targetPlatform ) override;
-	virtual EDataValidationResult IsDataValid(TArray<FText>& ValidationErrors) override;
+	virtual void PreSave( FObjectPreSaveContext saveContext ) override;
+	virtual EDataValidationResult IsDataValid(TArray< FText >& ValidationErrors) override;
 #endif
 	// End UObject interface
 
@@ -105,11 +114,15 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Schematic" )
 	static TArray< FItemAmount > GetCost( TSubclassOf< UFGSchematic > inClass );
 
+	/** Returns if this schematic is player specific */
+	UFUNCTION( BlueprintPure, Category = "Schematic" )
+	static bool GetIsPlayerSpecific( TSubclassOf< UFGSchematic > inClass );
+
 	/** Returns the unlocks granted by this schematic */
 	UFUNCTION( BlueprintPure, Category = "Schematic" )
 	static TArray< class UFGUnlock* > GetUnlocks( TSubclassOf< UFGSchematic > inClass );
 
-	/** Returns mTechOnionTier */
+	/** Returns which tier this belongs to. */
 	UFUNCTION( BlueprintPure, Category = "Schematic" )
 	static int32 GetTechTier( TSubclassOf< UFGSchematic > inClass );
 
@@ -141,11 +154,19 @@ public:
 	UFUNCTION( BlueprintCallable, Category = "Schematic" )
 	static void GetSchematicDependencies( TSubclassOf< UFGSchematic > inClass, TArray< class UFGAvailabilityDependency* >& out_schematicDependencies );
 
+	/** Returns if schematic should be hidden utnil dependencies are met. Used to filter out the visibilty of schematics when browsing them ingame */
+	UFUNCTION( BlueprintPure, Category = "Schematic" )
+	static bool GetHiddenUntilDependenciesMet( TSubclassOf< UFGSchematic > inClass );
+	
+	/** Get the schematic state. Used to filter visibility when browsing schematics in game */
+	UFUNCTION( BlueprintPure, Category = "Schematic" )
+	static ESchematicState GetSchematicState( TSubclassOf< UFGSchematic > inClass, UObject* worldContext );
+
 	/** Returns true if we can give access to this schematic. Checks for events and if mDependenciesBlocksSchematicAccess is true we check that all dependencies are met as well. */
 	UFUNCTION( BlueprintPure, Category = "Schematic" )
 	static bool CanGiveAccessToSchematic( TSubclassOf< UFGSchematic > inClass, UObject* worldContext );
 
-	/** Returns true if this schematic is allowed to be purchased more than once */
+	/** Returns true if this schematic only contains unlocks that can be purchased more than once. If we have no unlocks we return false */
 	UFUNCTION( BlueprintPure, Category = "Schematic" )
 	static bool IsRepeatPurchasesAllowed( TSubclassOf< UFGSchematic > inClass );
 
@@ -160,7 +181,7 @@ public:
 	// Return true if we should include this schematic in the current build
 	UFUNCTION( BlueprintPure, Category = "Schematic" )
 	static bool IsIncludedInBuild( TSubclassOf< UFGSchematic > inClass );
-
+	
 #if WITH_EDITOR
 	/** Add a recipe to this schematic. Only for editor use */
 	UFUNCTION( BlueprintCallable, Category = "Editor|Schematic" )
@@ -211,10 +232,15 @@ protected:
 	UPROPERTY( EditDefaultsOnly, Category = "Schematic" )
 	TArray< TSubclassOf<UFGSchematic> > mRelevantShopSchematics;
 
+	/** If true this schematic is purchased per player rather than session wide. Only really applicable if type is EST_ResourceSink so we
+	 *  do a check for that in IsDataValid */
+	UPROPERTY( EditDefaultsOnly, Category = "Unlocks" )
+	bool mIsPlayerSpecific;
+	
 	/** The unlocks you get when purchasing */
-	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Instanced, Category = "Unlocks" )
+	UPROPERTY( EditDefaultsOnly, Instanced, Category = "Unlocks" )
 	TArray< class UFGUnlock* > mUnlocks;
-
+	
 	/** Icon used when displaying this schematic */
 	UPROPERTY( EditDefaultsOnly, Category = "UI" )
 	FSlateBrush mSchematicIcon;
@@ -230,6 +256,10 @@ protected:
 	/** Should schematic dependencies block the access to the schematic. This doesn't store the schematic and checks if dependencies are met later. You need to try and give access to it again. */
 	UPROPERTY( EditDefaultsOnly, Category = "Dependencies" )
 	bool mDependenciesBlocksSchematicAccess;
+
+	/** Should schematic be hidden until dependencies are met. Used to filter out the visibility of schematics when browsing them ingame */
+	UPROPERTY( EditDefaultsOnly, Category = "Dependencies" )
+	bool mHiddenUntilDependenciesMet;
 
 	/** The events this schematic are present in */
 	UPROPERTY( EditDefaultsOnly, Category = "Events" )

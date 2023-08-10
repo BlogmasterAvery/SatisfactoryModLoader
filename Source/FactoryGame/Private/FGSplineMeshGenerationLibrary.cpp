@@ -5,21 +5,28 @@
 void UFGSplineMeshGenerationLibrary::BuildSplineMeshesInstanced( USplineComponent* spline,
 		UStaticMesh* mesh,
 		float meshLength,
-		UFGInstancedSplineMeshComponent* splineInstances){ }
+		 UFGConveyorInstanceSplineMesh* splineInstances){ }
+void UFGSplineMeshGenerationLibrary::BuildSplineMeshesInstanced(USplineComponent* spline, float meshLength,  UInstancedSplineMeshComponent* splineInstances){ }
 void UFGSplineMeshGenerationLibrary::BuildSplineMeshesPerSegmentInstanced( USplineComponent* spline,
 		UStaticMesh* mesh,
 		float meshLength,
 		UFGInstancedSplineMeshComponent* splineInstances){ }
+void UFGSplineMeshGenerationLibrary::BuildSplineMeshesPerSegmentInstanced(USplineComponent* spline,
+		UStaticMesh* mesh,
+		float meshLength,
+	    UInstancedSplineMeshComponent* splineInstances){ }
 void UFGSplineMeshGenerationLibrary::BuildSplineCollisionBoxesWithFixedSteps_DEPRECATED( USplineComponent* spline,
 		const FVector& collisionExtent,
 		float collisionSpacing,
 		const FVector& collisionOffset,
 		FName collisionProfile){ }
-void UFGSplineMeshGenerationLibrary::BuildSplineCollisionBoxesWithVariableSteps( USplineComponent* spline,
+UInstancedStaticMeshComponent* UFGSplineMeshGenerationLibrary::BuildSplineMeshCollisionWithDistanceFieldProxies( USplineComponent* spline,
 		const FVector& collisionExtent,
 		float collisionSpacing,
 		const FVector& collisionOffset,
-		FName collisionProfile){ }
+		FName collisionProfile,
+		UStaticMesh* oneMeterBoxMesh,
+		USceneComponent* optionalRoot){ return nullptr; }
 void UFGSplineMeshGenerationLibrary::BuildSplineCollisionCapsules( USplineComponent* spline,
 		float collisionRadius,
 		float collisionSpacing,

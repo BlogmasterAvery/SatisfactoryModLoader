@@ -19,6 +19,9 @@ class AFGWheeledVehicleAIController : public AAIController
 {
 	GENERATED_BODY()
 private:
+	/**
+	 * Set of high-level plans the vehicle can have, and that determine the vehicle's actions
+	 */
 	enum class Plan
 	{
 		None,
@@ -39,6 +42,9 @@ private:
 		NoTarget
 	};
 
+	/**
+	 * Used to indicate at what part of the vehicle a collision has been detected
+	 */
 	enum class Quadrant
 	{
 		None,
@@ -48,6 +54,9 @@ private:
 		BackRight
 	};
 
+	/**
+	 * Contains all the parameters that determine the current state of the vehicle
+	 */
 	struct Input
 	{
 		FVector Location = { 0.0f, 0.0f, 0.0f };
@@ -67,8 +76,12 @@ private:
 		//bool TargetChanged = false;
 	};
 
+	/**
+	 * Contains the parameters the controller can manipulate as input to the vehicle
+	 */
 	struct Output
 	{
+		bool BrakeAsReverse = true;
 		float Steering = 0.0f;
 		float Throttle = 0.0f;
 		float Brake = 0.0f;
@@ -97,6 +110,9 @@ private:
 	void CalculateInput( float deltaTime, Input& input ) const;
 	Plan PickPlan( const Input& input ) const;
 
+	/**
+	 * Implementation of all of the high-level plans that are listed in the enum Plan
+	 */
 	void Halt( const Input& input, Output& output );
 	void FollowInReverse( const Input& input, Output& output );
 	void ReverseToAlignment( const Input& input, Output& output );
@@ -130,34 +146,31 @@ private:
 	void CreateDetectionBox();
 	bool CheckCollisions( float deltaTime );
 
-#ifdef DEBUG_SELF_DRIVING
+#if DEBUG_SELF_DRIVING
 	void DrawDebug( float deltaTime, const Input& input, const Output& output );
 #endif
 
 	const FString& GetPlanName( Plan plan ) const;
 
 public:
-	static constexpr float FullSteeringAngleThreshold = 25.0f;
-	static constexpr float FullSteeringDifferenceThreshold = 25.0f;
+	static constexpr float FullSteeringAngleThreshold = 45.0f;
+	static constexpr float FullSteeringDifferenceThreshold = 45.0f;
 	static constexpr float ThrottleReleaseThreshold = 5.0f;
 	static constexpr float VehicleStillThreshold = 100.0f;
 	static constexpr float VehicleNeedsThrottleThreshold = 500.0f;
 	//static constexpr float MaxDistanceToSimulationToSides = 1000.0f;
 	//static constexpr float InFrontThreshold = 25.0f;
-	static constexpr float AlignedAngleAim = 15.0f;
+	static constexpr float AlignedAngleAim = 5.0f;
 	static constexpr float TooFastToFollowInReverse = 1000.0f;
 
 private:
 	TWeakObjectPtr< class AFGWheeledVehicle > mVehicle;
-	TWeakObjectPtr< class UWheeledVehicleMovementComponent > mMovement;
+	TWeakObjectPtr< class UFGWheeledVehicleMovementComponent > mMovement;
 	TWeakObjectPtr< class UFGSplinePathMovementComponent > mSimulationMovement;
 
 	class AFGTargetPoint* mCurrentTarget = nullptr;
 	class AFGTargetPoint* mPreviousTarget = nullptr;
-
-	UPROPERTY( Transient )
-	class UFGWheeledVehicleDetectionComponent* mDetection;
-
+	
 	FVector mDetectionBoxExtent;
 	FVector mDetectionBoxLocalOrigin;
 

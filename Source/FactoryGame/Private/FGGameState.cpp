@@ -2,6 +2,12 @@
 
 #include "FGGameState.h"
 
+void UFGGameStateRemoteCallObject::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UFGGameStateRemoteCallObject, mForceNetField_UFGGameStateRemoteCallObject);
+}
+UFGGameStateRemoteCallObject* UFGGameStateRemoteCallObject::Get(UWorld* world){ return nullptr; }
+void UFGGameStateRemoteCallObject::Server_SetCreativeModeEnabled_Implementation(){ }
 AFGGameState::AFGGameState() : Super() {
 	this->mTurboModeMultiplier = 0.0;
 	this->mPowerCircuitFuseTriggeredMessage = nullptr;
@@ -18,7 +24,6 @@ AFGGameState::AFGGameState() : Super() {
 	this->mMapManager = nullptr;
 	this->mRadioactivitySubsystem = nullptr;
 	this->mChatManager = nullptr;
-	this->mCentralStorageSubsystem = nullptr;
 	this->mPipeSubsystem = nullptr;
 	this->mUnlockSubsystem = nullptr;
 	this->mResourceSinkSubsystem = nullptr;
@@ -29,9 +34,11 @@ AFGGameState::AFGGameState() : Super() {
 	this->mDroneSubsystem = nullptr;
 	this->mStatisticsSubsystem = nullptr;
 	this->mSignSubsystem = nullptr;
-	this->mPlayDurationWhenLoaded = 0;
+	this->mCreatureSubsystem = nullptr;
+	this->mScannableSubsystem = nullptr;
+	this->mBlueprintSubsystem = nullptr;
+	this->mGameRulesSubsystem = nullptr;
 	this->mReplicatedSessionName = TEXT("");
-	this->mReplicadedOnlineNumPubliclConnections = 0;
 	this->mUnlockCustomizerSchematic = nullptr;
 	this->mPlannedRestartTime = 24.0;
 	this->mHubPartClass = nullptr;
@@ -42,7 +49,9 @@ AFGGameState::AFGGameState() : Super() {
 	this->mIsTradingPostBuilt = false;
 	this->mHasInitalTradingPostLandAnimPlayed = false;
 	this->mIsSpaceElevatorBuilt = false;
-	this->mServerLocalDateTimeTicksAtInit = 0LL;
+	this->mPublicTodoList = TEXT("");
+	this->mHasGivenStartingRecipes = false;
+	this->mIsCreativeModeEnabled = false;
 	this->PrimaryActorTick.TickGroup = ETickingGroup::TG_PrePhysics;
 	this->PrimaryActorTick.EndTickGroup = ETickingGroup::TG_PrePhysics;
 	this->PrimaryActorTick.bTickEvenWhenPaused = true;
@@ -73,6 +82,10 @@ void AFGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(AFGGameState, mEventSubsystem);
 	DOREPLIFETIME(AFGGameState, mDroneSubsystem);
 	DOREPLIFETIME(AFGGameState, mSignSubsystem);
+	DOREPLIFETIME(AFGGameState, mCreatureSubsystem);
+	DOREPLIFETIME(AFGGameState, mScannableSubsystem);
+	DOREPLIFETIME(AFGGameState, mBlueprintSubsystem);
+	DOREPLIFETIME(AFGGameState, mGameRulesSubsystem);
 	DOREPLIFETIME(AFGGameState, mVisitedMapAreas);
 	DOREPLIFETIME(AFGGameState, mPickedUpItems);
 	DOREPLIFETIME(AFGGameState, mPlayDurationWhenLoaded);
@@ -91,9 +104,11 @@ void AFGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(AFGGameState, mIsSpaceElevatorBuilt);
 	DOREPLIFETIME(AFGGameState, mServerLocalDateTimeTicksAtInit);
 	DOREPLIFETIME(AFGGameState, mTetrominoLeaderBoard);
+	DOREPLIFETIME(AFGGameState, mPublicTodoList);
+	DOREPLIFETIME(AFGGameState, mIsCreativeModeEnabled);
 }
 void AFGGameState::Tick(float delta){ }
-void AFGGameState::EndPlay(const EEndPlayReason::Type EndPlayReason){ }
+void AFGGameState::BeginPlay(){ }
 void AFGGameState::PreSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }
 void AFGGameState::PostSaveGame_Implementation(int32 saveVersion, int32 gameVersion){ }
 void AFGGameState::PreLoadGame_Implementation(int32 saveVersion, int32 gameVersion){ }
@@ -104,8 +119,11 @@ bool AFGGameState::ShouldSave_Implementation() const{ return bool(); }
 void AFGGameState::HandleMatchIsWaitingToStart(){ }
 void AFGGameState::HandleMatchHasStarted(){ }
 void AFGGameState::AddPlayerState( APlayerState* playerState){ }
+void AFGGameState::RemovePlayerState( APlayerState* playerState){ }
+void AFGGameState::OnPlayerStateSlotDataUpdated( AFGPlayerState* playerState){ }
 void AFGGameState::Init(){ }
 bool AFGGameState::AreClientSubsystemsValid(){ return bool(); }
+void AFGGameState::CheckClientSubsystemsValid(){ }
 int32 AFGGameState::FindFreeSlot( AFGPlayerState* playerState){ return int32(); }
 bool AFGGameState::IsTradingPostBuilt() const{ return bool(); }
 bool AFGGameState::HasInitalTradingPostLandAnimPlayed() const{ return bool(); }
@@ -115,6 +133,9 @@ void AFGGameState::GetVisitedMapAreas(TArray< TSubclassOf< UFGMapArea > >& out_V
 bool AFGGameState::IsMapAreaVisisted(TSubclassOf< UFGMapArea > inArea){ return bool(); }
 void AFGGameState::AddUniqueVisistedMapArea(TSubclassOf< UFGMapArea > mapArea){ }
 void AFGGameState::OnRep_MapAreaVisited(){ }
+void AFGGameState::SetCheatNoPower(bool noPower){ }
+void AFGGameState::SetCheatNoCost(bool noCost){ }
+void AFGGameState::SetCheatNoFuel(bool noFuel){ }
 void AFGGameState::NotifyPlayerAdded( AFGCharacterPlayer* inPlayer){ }
 void AFGGameState::SendMessageToAllPlayers(TSubclassOf<  UFGMessageBase > inMessage){ }
 void AFGGameState::SendMessageToPlayer(TSubclassOf<  UFGMessageBase > inMessage,  APlayerController* controller){ }
@@ -141,5 +162,11 @@ bool AFGGameState::IsCustomizerRecipeUnlocked(){ return bool(); }
 void AFGGameState::SetDefaultSwatchForBuildableGroup(TSubclassOf<  UFGSwatchGroup > swatchGroup, TSubclassOf<  UFGFactoryCustomizationDescriptor_Swatch> swatch){ }
 void AFGGameState::AddTetrominoResult(const FMiniGameResult& newResult){ }
 void AFGGameState::OnRep_TetrominoLeaderBoard(){ }
+void AFGGameState::Server_SetPublicTodoList(const FString& newTodoList){ }
+void AFGGameState::SetCreativeModeEnabled(){ }
 void AFGGameState::CheckRestartTime(){ }
 void AFGGameState::OnRep_PlannedRestartTime(){ }
+void AFGGameState::OnRep_CheatNoPower(){ }
+void AFGGameState::SubmitNumPlayersTelemetry() const{ }
+void AFGGameState::SubmitCheatTelemetry() const{ }
+void AFGGameState::TryGiveStartingRecipes( AFGCharacterPlayer* inPlayer){ }

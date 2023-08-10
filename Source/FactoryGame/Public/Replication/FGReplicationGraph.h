@@ -103,7 +103,14 @@ public:
 	/** Maps the actors that need to be always relevant across streaming levels */
 	TMap<FName, FActorRepListRefView> mAlwaysRelevantStreamingLevelActors;
 
+	/**
+	 * Registers the default replication policy for the specified actor
+	 * If the actor is not explicitly registered in the replication graph, it will be assumed to be ConditionallyRelevant, which
+	 * should be good enough for a lot of use cases but if you want spatialization or per-connection relevancy, you can override that
+	 */
+	static void RegisterCustomClassRepPolicy( TSoftClassPtr<AActor> inActor, EClassRepPolicy inRepPolicy );
 protected:
+	static TMap<TSoftClassPtr<AActor>, EClassRepPolicy> CustomClassRepPolicies;
 	 
 	/** Class types of equipment who's dependency to the pawn shouldn't be removed if they're unequipped. */
 	UPROPERTY()
@@ -217,7 +224,7 @@ public:
 			return  Hz > 0.f ? ( uint32 )FMath::CeilToInt( TargetFrameRate / Hz ) : 0;
 		}
 	};
-
+	
 	// --------------------------------------------------------
 	struct FSettings
 	{
@@ -235,7 +242,7 @@ public:
 		int32 FrequencyGridSubdivisions = 31;
 		float CullDistance = 35000.f; // Potentially not great, this will be used to calc cull distance on Cells. As all actors in a cell will be culled together not per actor
 		float SkipLowPriorityAtHz = 2.f; // At 2hz or lower we will skip low priority conveyors. They will be disregarded and not replicate at all
-		int32 MaxAllowedRepPeriod = 120; // Anything over this amount of frames will be clamped to this value
+		int32 MaxAllowedRepPeriod = 120; // Anything over this amount of frames will be set to 0
 	};
 
 	static FSettings mDefaultSettings;	// Default settings used by all instance
@@ -706,7 +713,7 @@ protected:
 	int32 mNumExpectedReplicationsNextFrame = 0;
 
 	int32 CalcFrequencyForCell( FFrequencyGrid2D_Cell* GridCell, UReplicationGraph* RepGraph, UNetReplicationGraphConnection& ConnectionManager, UNetConnection* NetConnection, FSettings& MySettings, const FNetViewerArray& Viewers, const uint32 FrameNum, bool IsPlayerInCell );
-	
+
 	// Has this Node Initialized its frequency grid
 	bool mHasInitializedGrid;
 

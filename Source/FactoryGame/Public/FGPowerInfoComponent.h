@@ -100,9 +100,7 @@ public:
 	/** Get the target power consumption. */
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|PowerInfo" )
 	float GetTargetConsumption() const;
-
-	//@todopower DO NOT EXPOSE TO BLUEPRINT
-	//           They need more work to function with power graph, client, etc. -G2
+	
 	/**
 	 * Set the maximum power we might want from the circuit under normal conditions, i.e. no potential set.
 	 * @note This is an informative value for the subsystem and is not used in any of the power calculations.
@@ -151,7 +149,7 @@ public:
 	/** Get the dynamic power production we provide to the circuit. */
 	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|PowerInfo" )
 	float GetRegulatedDynamicProduction() const;
-
+	
 	/**
 	 * @param isFullBlast set to true if the generator should always produce at full capacity; to false if it should only produce on-demand
 	 */
@@ -238,5 +236,5 @@ private:
 	uint8 mIsFuseTriggered:1;
 
 	UPROPERTY( SaveGame, Replicated )
-	uint8 mIsFullBlast : 1;
+	uint8 mIsFullBlast:1;
 };

@@ -89,6 +89,9 @@ public:
 	UPROPERTY( EditDefaultsOnly )
 	TSoftObjectPtr< UTexture2D > mIcon;
 
+protected:
+	FORCEINLINE virtual bool Internal_CanItemBePickedup() const override { return false; }
+
 };
 
 // Swatch Class
@@ -137,6 +140,18 @@ protected:
 	// Is this Material Desc the "default" for its category. This means it will be prioritized as the Build Menu Default selection if the player hasn't specified yet
 	UPROPERTY( EditDefaultsOnly )
 	bool IsCategoryDefault;
+
+public:
+	// Returns true if a new type was added, will crash if any entry is null to avoid issues in the material system.
+	bool AddType( TSubclassOf< class AFGBuildable > inBuildable, TSubclassOf<UFGRecipe> inRecipe );
+
+#if WITH_EDITOR
+	UFUNCTION(BlueprintCallable)
+	static void Sanitize( TSubclassOf<UFGFactoryCustomizationDescriptor_Material> MaterialToSanitize, FString invalidTypeName, TArray<TSubclassOf<class AFGBuildable>> &mPurgeList );
+
+	UFUNCTION(BlueprintCallable)
+	static void Purge(TSubclassOf<UFGFactoryCustomizationDescriptor_Material> MaterialToSanitize, TArray<TSubclassOf<class AFGBuildable>> mPurgeList);
+#endif
 };
 
 
@@ -278,12 +293,16 @@ public:
 
 	FFactoryCustomizationColorSlot() : 
 		PrimaryColor( FLinearColor( 0.f, 0.f, 0.f, 1.f ) ), 
-		SecondaryColor( FLinearColor( 0.f, 0.f, 0.f, 1.f ) )
+		SecondaryColor( FLinearColor( 0.f, 0.f, 0.f, 1.f ) ),
+		Metallic( 0.f ),
+		Roughness( 0.f )
 	{}
 
 	FFactoryCustomizationColorSlot( FLinearColor primary, FLinearColor secondary ) : 
 		PrimaryColor( primary ), 
-		SecondaryColor( secondary ) 
+		SecondaryColor( secondary ),
+		Metallic( 0.f ),
+		Roughness( 0.f )
 	{}
 
 	FORCEINLINE bool operator==( const FFactoryCustomizationColorSlot& other ) const 
@@ -366,7 +385,11 @@ struct FACTORYGAME_API FFactoryCustomizationData
 	FFactoryCustomizationData() :
 		SwatchDesc( nullptr ),
 		PatternDesc( nullptr ),
-		MaterialDesc( nullptr )
+		MaterialDesc( nullptr ),
+		PatternRotation( 0.f ),
+		ColorSlot( 0 ),
+		NeedsSkinUpdate( false ),
+		HasPower( false )
 	{}
 
 	/**

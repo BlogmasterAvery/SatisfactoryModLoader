@@ -24,7 +24,9 @@ public:
 	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable )
 	void OnRowUnhovered();
 
-	void InitValueController( FOptionRowData optionRowData, UFGDynamicOptionsRow* parentOptionRow );
+	void InitValueController( FOptionRowData optionRowData, UFGDynamicOptionsRow* parentOptionRow, TScriptInterface< class IFGOptionInterface > optionInterface );
+	
+	void InitValueController( class UFGUserSetting* userSetting, UFGDynamicOptionsRow* parentOptionRow, TScriptInterface< class IFGOptionInterface > optionInterface );
 
 	UFUNCTION( BlueprintNativeEvent )
 	bool IsPendingApply();
@@ -44,17 +46,34 @@ public:
 	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable )
 	void OnOptionClicked();
 
-	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable )
+	// Called before an option is applied. So we can take action before option is applied 
+	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable, Meta = ( DisplayName=OnOptionPreApplied ) )
 	void OnOptionApplied();
 
+	// Called when we reset an option. This is the first thing to be called before the applied value is reset back to the default value
+	// Gives the widget a chance to execute logic that is needed for the setting to be reset. Mostly useful for custom settings with custom widgets
 	UFUNCTION( BlueprintNativeEvent, BlueprintCallable )
 	void OnOptionReverted();
 
 	UFUNCTION( BlueprintPure )
 	FText GetCurrentSelectionText();
 
+	// Is this option allowed to be edited
+	UFUNCTION( BlueprintPure )
+	bool IsOptionEditable() const;
+	
+	bool CanSelectIndex( int32 newIndex );
+
 	UFUNCTION( BlueprintCallable )
 	bool ChangeSelection( FText currentKey, bool incrementSelection );
+
+	FString GetSettingIndentifier() const;
+
+	TArray<FIntegerSelection> GetIntegerSelectionValues() const;
+	
+	bool GetBlockLastIndexFromManualSelection() const;
+	
+	EOptionType GetOptionType() const;
 
 protected:
 
@@ -63,15 +82,27 @@ protected:
 	UFUNCTION( BlueprintPure, Category = "Option" )
 	bool GetBoolOptionValue();
 
+	UFUNCTION(BlueprintGetter)
+	FOptionRowData GetOptionRowData() const;
+
+	UFUNCTION( BlueprintPure, Category = "Option" )
+	FORCEINLINE TScriptInterface< class IFGOptionInterface > GetOptionInterface() const { return mOptionInterface; } 
+
 protected:
 
-	UPROPERTY( BlueprintReadOnly )
+	UPROPERTY( BlueprintReadOnly, BlueprintGetter = GetOptionRowData )
 	FOptionRowData mOptionRowData;
+
+	UPROPERTY( Transient, BlueprintReadOnly )
+	UFGUserSetting* mUserSetting;
 	
 	UPROPERTY( BlueprintReadOnly )
 	bool mIsDynamicOption;
 
 	UPROPERTY( BlueprintReadOnly )
 	UFGDynamicOptionsRow* mParentOptionRow;
+
+	UPROPERTY( Transient )
+	TScriptInterface< class IFGOptionInterface > mOptionInterface;
 
 };

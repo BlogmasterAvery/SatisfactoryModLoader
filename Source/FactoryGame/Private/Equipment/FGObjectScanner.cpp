@@ -10,6 +10,8 @@ AFGObjectScanner::AFGObjectScanner() : Super() {
 	this->mUpdateClosestObjectTime = 2.0;
 	this->mClosestObject = nullptr;
 	this->mShouldBeepEvenIfNoObject = true;
+	this->mCurrentScannableDescriptor = nullptr;
+	this->mCurrentScannableDetails = nullptr;
 	this->mEquipmentSlot = EEquipmentSlot::ES_ARMS;
 	this->mArmAnimation = EArmEquipment::AE_ObjectScanner;
 }
@@ -17,18 +19,17 @@ void AFGObjectScanner::BeginPlay(){ }
 void AFGObjectScanner::Tick(float deltaTime){ }
 void AFGObjectScanner::Equip( AFGCharacterPlayer* character){ }
 void AFGObjectScanner::UnEquip(){ }
+void AFGObjectScanner::AddEquipmentActionBindings(){ }
 bool AFGObjectScanner::CycleForward(){ return bool(); }
 bool AFGObjectScanner::CycleBackward(){ return bool(); }
-FScannableDetails AFGObjectScanner::GetCurrentDetails(){ return FScannableDetails(); }
-TArray < FScannableDetails > AFGObjectScanner::GetAvailableObjectDetails(){ return TArray< FScannableDetails>(); }
-void AFGObjectScanner::SetScannableEntry(TSubclassOf< AActor > scannableClass){ }
-void AFGObjectScanner::PrecacheObjects(){ }
+void AFGObjectScanner::GetAvailableScannableDescriptors(TArray < TSubclassOf<UFGItemDescriptor> >& out_availableDescriptors){ }
+void AFGObjectScanner::SetScannableDescriptor(TSubclassOf<UFGItemDescriptor> newScannableDescriptor){ }
+void AFGObjectScanner::Input_OpenMenu(const FInputActionValue& actionValue){ }
+void AFGObjectScanner::Input_Cycle(const FInputActionValue& actionValue){ }
 bool AFGObjectScanner::Internal_CycleObjects(ECycleDirection direction){ return bool(); }
 void AFGObjectScanner::RemoveInvalidObjectsFromCache(TSubclassOf< AActor > scannableClass){ }
 void AFGObjectScanner::UpdateClosestObject(){ }
 void AFGObjectScanner::Internal_PlayBeep(){ }
-void AFGObjectScanner::GetAllActorsOfClassAsWeakPtr(TSubclassOf<  AActor > actorClass, TArray< TWeakObjectPtr<  AActor > > &out_Actors){ }
-TArray<TTuple<FScannableDetails, int32>> AFGObjectScanner::GetCurrentDetailsWithIndex(){ return TArray<TTuple<FScannableDetails,int32>>(); }
 void AFGObjectScanner::TryToEquipDefaultObject(){ }
 void AFGObjectScannerAttachment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

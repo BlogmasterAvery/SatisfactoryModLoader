@@ -7,8 +7,19 @@
 #include "ItemAmount.h"
 #include "FGSaveInterface.h"
 #include "CharacterAnimationTypes.h"
+#include "FGHealthComponent.h"
 #include "Replication/FGReplicationDependencyActorInterface.h"
+#include "InputMappingContext.h"
 #include "FGEquipment.generated.h"
+
+// [ZolotukhinN:14/03/2023] Moved here from FGCharacterPlayer.h because it's used here and FGCharacterPlayer.h includes this header, so we cannot include it here
+UENUM( BlueprintType )
+enum class ECameraMode : uint8
+{
+	ECM_None,
+	ECM_FirstPerson,
+	ECM_ThirdPerson,
+};
 
 //Equipments are equip on different slots on the player. One EQ per slot. These are the slots.
 UENUM( BlueprintType )
@@ -16,10 +27,54 @@ enum class EEquipmentSlot :uint8
 {
 	ES_NONE			UMETA( DisplayName = "Please specify a slot." ),
 	ES_ARMS			UMETA( DisplayName = "Arms" ),
-	ES_BACK			UMETA( DisplayName = "Body" ),
+	ES_BACK			UMETA( DisplayName = "Back" ),
+	ES_LEGS			UMETA( DisplayName = "Legs" ),
+	ES_HEAD			UMETA( DisplayName = "Head" ),
+	ES_BODY			UMETA( DisplayName = "Body" ),
 	ES_MAX			UMETA( Hidden )
 };
 
+/** A type of default equipment action. */
+UENUM( BlueprintType, Meta = ( Bitflags, UseEnumValuesAsMaskValuesInEditor = "true" ) )
+enum class EDefaultEquipmentAction : uint8
+{
+	None			= 0			UMETA( Hidden ),
+	
+	PrimaryFire		= 1 << 0	UMETA( DisplayName = "Primary Fire" ),
+	SecondaryFire	= 1 << 1	UMETA( DisplayName = "Secondary Fire" ),
+
+	MAX							UMETA( Hidden ),
+	ALL				= 0xFF		UMETA( Hidden )
+};
+
+// Logic operators for the EDefaultEquipmentAction enum
+inline EDefaultEquipmentAction operator | ( EDefaultEquipmentAction a, EDefaultEquipmentAction b ) { return (EDefaultEquipmentAction)( (uint8)a | (uint8)b ); }
+inline EDefaultEquipmentAction operator & ( EDefaultEquipmentAction a, EDefaultEquipmentAction b ) { return (EDefaultEquipmentAction)( (uint8)a & (uint8)b ); }
+
+inline EDefaultEquipmentAction& operator |= ( EDefaultEquipmentAction& a, EDefaultEquipmentAction b ) { return (EDefaultEquipmentAction&)( (uint8&)a |= (uint8)b ); }
+inline EDefaultEquipmentAction& operator &= ( EDefaultEquipmentAction& a, EDefaultEquipmentAction b ) { return (EDefaultEquipmentAction&)( (uint8&)a &= (uint8)b ); }
+
+/** Events for the default equipment actions. */
+UENUM( BlueprintType )
+enum class EDefaultEquipmentActionEvent : uint8
+{
+	Pressed		UMETA( DisplayName = "Pressed" ),
+	Released	UMETA( DisplayName = "Released" ),
+};
+
+/**
+ * Helper struct to store a list of materials for a Map using the mesh name as key
+ * This is used at runtime to swap materials on equipment to support Panini WPO for fov inversion	
+ */
+USTRUCT()
+struct FFirstPersonMaterialArray
+{
+	GENERATED_BODY()
+
+	// List of materials with matching indices
+	UPROPERTY( EditDefaultsOnly )
+	TArray< class UMaterialInterface* > FirstPersonMaterials;
+};
 
 /**
  * Base class for all kinds of equipment in the game.
@@ -34,7 +89,9 @@ public:
 	// Begin AActor interface
 	virtual void GetLifetimeReplicatedProps( TArray< FLifetimeProperty >& OutLifetimeProps ) const override;
 	virtual void PreReplication( IRepChangedPropertyTracker & ChangedPropertyTracker ) override;
+	virtual void OnRep_AttachmentReplication() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	// End AActor interface
 
 	// Begin IFGSaveInterface
@@ -57,35 +114,18 @@ public:
 	/** Called whenever the character changes movement mode. */
 	virtual void OnCharacterMovementModeChanged( EMovementMode PreviousMovementMode, uint8 PreviousCustomMode, EMovementMode NewMovementMode, uint8 NewCustomMode );
 
-	/** Called on the owner, client or server but not both. */
-	void OnDefaultPrimaryFirePressed();
+	/* Updates primitive values on all UPrimitive components.*/
+	void UpdatePrimitiveColors();
 
-	/** Only server implementation of primary fire */
-	UFUNCTION( Server, Reliable, WithValidation )
-	void Server_DefaultPrimaryFire();
-
-	/** BP hook for implementing what should actually happen when pressing fire */
-	UFUNCTION( BlueprintImplementableEvent, Category = "Equipment" )
-	void DoDefaultPrimaryFire();
-
-	/** Plays effects when using default primary fire */
-	UFUNCTION( BlueprintImplementableEvent, Category = "Equipment" )
-	void DoDefaultPrimaryFireEffects();
-
-	/** Native only function that does default stuff needed for the default primary fire event */
-	UFUNCTION()
-	virtual void DoDefaultPrimaryFire_Native();
-
-	/** Native only function that does default stuff needed for the default primary fire event */
-	UFUNCTION( BlueprintNativeEvent, Category = "Equipment" )
-	bool CanDoDefaultPrimaryFire();
+	/** Updates materials based on the camera mode */
+	void UpdateMaterialsFromCameraMode();
 
 	UFUNCTION( BlueprintCallable, Category= "Equipment" )
 	virtual void DisableEquipment();
 	
 	/**
 	 * Is this equipment equipped.
-	 * @return - true if equiped; otherwise false.
+	 * @return - true if equipped; otherwise false.
 	 */
 	UFUNCTION( BlueprintPure, Category = "Equipment" )
 	FORCEINLINE bool IsEquipped() const { return GetInstigator() != nullptr; }
@@ -97,6 +137,8 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Equipment" )
 	class AFGCharacterPlayer* GetInstigatorCharacter() const;
 
+	UFUNCTION()
+	void OnColorUpdate(int32 index);
 	/** 
 	 * @return Is the instigator locally controlled; false if no instigator.
 	 */
@@ -162,7 +204,7 @@ public:
 	 * @return the adjusted damage
 	 **/
 	UFUNCTION( BlueprintNativeEvent, CustomEventUsing = mHave_AdjustDamage, Category = "Damage" )
-	float AdjustDamage( float damageAmount, const class UDamageType* damageType, class AController* instigatedBy, AActor* damageCauser );
+	float AdjustDamage( const float damageAmount, const class UDamageType* damageType, class AController* instigatedBy, AActor* damageCauser );
 
 	/** When using this equipment, the character use distance will be increased to this amount. */
 	UFUNCTION( BlueprintPure, Category = "Equipment" )
@@ -177,10 +219,10 @@ public:
 
 	/** Should we play stinger animation */
 	UFUNCTION( BlueprintPure, Category = "Equipment" )
-	FORCEINLINE bool ShouldShowStinger() { return mFirstTimeEquipped; }
+	bool ShouldShowStinger() const;
 
 	/** Sets if this is the first time this was equipped */
-	void SetFirstTimeEquipped( bool firstTime ) { mFirstTimeEquipped = firstTime; }
+	void SetFirstTimeEquipped( const bool firstTime ) { mFirstTimeEquipped = firstTime; }
 
 	/** @return idle pose animation, can be NULL */
 	UFUNCTION( BlueprintPure, Category = "Animation" )
@@ -201,8 +243,54 @@ public:
 	/** @return idle pose animation for 3p, can be NULL */
 	UFUNCTION( BlueprintPure, Category = "Animation" )
     class UAimOffsetBlendSpace* GetAttachmentIdleAO() const { return mAttachmentIdleAO; }
+
+	/** Called when the equipment was removed from it's equipment slot */
+	UFUNCTION( BlueprintNativeEvent, Category = "Equipment" )
+	void WasRemovedFromSlot();
+
+	/** Called when the equipment was moved to it's equipment slot (this can happen without necessarily switching to that slot thus equipping the equipment) */
+	UFUNCTION( BlueprintNativeEvent, Category = "Equipment" )
+	void WasSlottedIn( class AFGCharacterPlayer* holder );
+
+	UFUNCTION( BlueprintPure, Category = "Equipment" )
+	virtual void GetSupportedConsumableTypes(TArray<TSubclassOf< UFGItemDescriptor >>& out_itemDescriptors) const;
+	
+	UFUNCTION( BlueprintPure, Category = "Equipment" )
+	virtual int GetSelectedConsumableTypeIndex() const;
+	
+	UFUNCTION( BlueprintCallable, Category = "Equipment" )
+	virtual void SetSelectedConsumableTypeIndex( const int selectedIndex );
+
+	FORCEINLINE UInputMappingContext* GetMappingContext() const { return mMappingContext; }
+	int32 GetMappingContextPriority() const;
+
+	/** Returns the current camera mode of the player the equipment is attached to. Will return ECM_None if not equipped */
+	UFUNCTION( BlueprintPure, Category = "Equipment" )
+	ECameraMode GetInstigatorCameraMode() const;
+
+	/** Called when the camera mode of the player having the equipment changes to third or first person */
+	UFUNCTION( BlueprintNativeEvent, Category = "Equipment" )
+	void OnCameraModeChanged( ECameraMode newCameraMode );
+
+	const TArray< FItemAmount >& GetCostToUse() const { return mCostToUse; }
+
+	/** Called whenever an interact widget gets added or removed. */
+    virtual void OnInteractWidgetAddedOrRemoved( class UFGInteractWidget* widget, bool added );
 	
 protected:
+	UFUNCTION( Server, Reliable )
+	void Server_TriggerDefaultEquipmentActionEvent( EDefaultEquipmentAction action, EDefaultEquipmentActionEvent actionEvent );
+
+	/** Used to trigger a default equipment action. */
+	void TriggerDefaultEquipmentActionEvent( EDefaultEquipmentAction action, EDefaultEquipmentActionEvent actionEvent );
+
+	/** Native handler for a default action event for an equipment. Gets called on both Server and Client. */
+	virtual void HandleDefaultEquipmentActionEvent( EDefaultEquipmentAction action, EDefaultEquipmentActionEvent actionEvent );
+
+	/** Blueprint handler for a default action event for an equipment. Gets called on both Server and Client. */
+	UFUNCTION( BlueprintImplementableEvent, Category = "Equipment" )
+	void DoHandleDefaultEquipmentActionEvent( EDefaultEquipmentAction action, EDefaultEquipmentActionEvent actionEvent );
+	
 	/** Was the equipment equipped. */
 	UFUNCTION( BlueprintNativeEvent, Category = "Equipment" )
 	void WasEquipped();
@@ -211,21 +299,12 @@ protected:
 	void WasUnEquipped();
 
 	/** Add HUD that this equipment needs */
-	void AddEquipmentHUD();
+	void AddEquipmentHUD() const;
 	/** Removes HUD for the equipment */
-	void RemoveEquipmentHUD();
+	void RemoveEquipmentHUD() const;
 
 	/** Sets tick status for actor and all components */
 	void SetEquipmentTicks( bool inTick );
-
-	/** Helper for binding actions and setting their consume status */
-	template< class UserClass >
-	FORCEINLINE void BindActionHelper( const FName ActionName, const EInputEvent KeyEvent, UserClass* Object, typename FInputActionHandlerSignature::TUObjectMethodDelegate< UserClass >::FMethodPtr Func, bool consumeInput )
-	{
-		FInputActionBinding& inputAction = InputComponent->BindAction( ActionName, KeyEvent, Object, Func );
-
-		inputAction.bConsumeInput = consumeInput;
-	}
 
 	/** Add custom bindings for this equipment */
 	virtual void AddEquipmentActionBindings();
@@ -236,7 +315,7 @@ protected:
 	UFUNCTION( BlueprintCallable, Category = "Equipment" )
 	bool CanAffordUse() const;
 
-	/** Called if we couldn't afford to use the equipment */
+	/** Called if we could not afford to use the equipment */
 	UFUNCTION( BlueprintNativeEvent, Category = "Equipment" )
 	void DidNotAffordUse();
 
@@ -254,6 +333,13 @@ protected:
 	UFUNCTION()
 	void OnChildEquipmentReplicated();
 
+	/** Used to apply / remove the mapping context for this equipment. */
+	void SetMappingContextApplied( bool applied );
+
+	/** Input Actions */
+	void Input_DefaultPrimaryFire( const FInputActionValue& actionValue );
+	void Input_DefaultSecondaryFire( const FInputActionValue& actionValue );
+
 public:
 	/** This is the attachment for this class */
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
@@ -269,7 +355,7 @@ public:
 
 	/** Camera shake to play when sprinting */
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
-	TSubclassOf< class UMatineeCameraShake > mSprintHeadBobShake;
+	TSubclassOf< class ULegacyCameraShake > mSprintHeadBobShake;
 
 	//@todo Are these used by Joel or legacy?
 	/** Sound played when equipping */
@@ -297,6 +383,11 @@ protected:
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
 	FName mAttachSocket;
 
+	/** Each Mesh Component should have an entry here to remap its materials to the First person material (one with the panini switch enabled) */
+	UPROPERTY( EditDefaultsOnly, Category = "Equipment")
+	TMap< FName, FFirstPersonMaterialArray > mComponentNameToFirstPersonMaterials;
+
+	// TODO: Get rid of child equipment logic
 	/** The class (if any) to use to spawn a child equipment */
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
 	TSubclassOf< class AFGEquipmentChild > mChildEquipmentClass;
@@ -318,13 +409,24 @@ protected:
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment", AdvancedDisplay )
 	bool mHasPersistentOwner;
 
+	UPROPERTY( EditDefaultsOnly, Category = "Equipment", AdvancedDisplay )
+	bool mOnlyVisibleToOwner;
+	
+	/** The equipment's input mapping context which gets applied when equipping it. */
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "Input" )
+	TObjectPtr<UInputMappingContext> mMappingContext;
+
+	/** What default equipment actions to enable. */
+	UPROPERTY( EditDefaultsOnly, meta = ( Bitmask, BitmaskEnum = "EDefaultEquipmentAction" ), Category = "Equipment" )
+	uint8 mDefaultEquipmentActions;
+
 private:
 	/** This is the attachment of this equipment */
-	UPROPERTY()
+	UPROPERTY( Replicated )
 	class AFGEquipmentAttachment* mAttachment;
 
 	/** This is a potential secondary attachment */
-	UPROPERTY()
+	UPROPERTY( Replicated )
 	class AFGEquipmentAttachment* mSecondaryAttachment;
 
 	/** True if we have a blueprint version of some functions */
@@ -349,11 +451,16 @@ private:
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment|Animation" )
 	class UAnimSequence* mSlidePoseAnimation3p;
 
-	/** Should we use the default primary fire implementation */
-	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
-	bool mUseDefaultPrimaryFire;
-
 	/** Aim offset to override with */
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment|Animation" )
 	class UAimOffsetBlendSpace* mAttachmentIdleAO;
+
+	/** List of damages modifiers that this equipment applies upon equip (and removes once unequipped).
+	 *Used to modify the amount of damages inbound from specific types of damages. */
+	UPROPERTY(EditDefaultsOnly, Category= "Equipment" )
+	TArray<FDamageModifier> mReceivedDamageModifiers;
+
+	/** Materials that were swapped out during the change of the POV to first person */
+	UPROPERTY( VisibleInstanceOnly, Category = "Equipment" )
+	TMap<FName, FFirstPersonMaterialArray> mSwappedOutThirdPersonMaterials;
 };

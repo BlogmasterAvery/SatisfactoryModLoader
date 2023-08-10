@@ -6,7 +6,11 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "FGOptionsSettings.h"
+#include "Settings/FGUserSetting.h"
 #include "FGDynamicOptionsRow.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FOnOptionRowHovered, UFGDynamicOptionsRow*, optionRow );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FOnOptionRowUnhovered, UFGDynamicOptionsRow*, optionRow );
 
 /**
  * 
@@ -19,17 +23,20 @@ class FACTORYGAME_API UFGDynamicOptionsRow : public UUserWidget
 public:
 	virtual void NativePreConstruct() override;
 
-	void InitOptionRow( FOptionRowData optionRowData, TSubclassOf<class UFGOptionsValueController> widgetOptionClass );
+	void InitOptionRow( FOptionRowData optionRowData, TSubclassOf<class UFGOptionsValueController> widgetOptionClass, TScriptInterface< class IFGOptionInterface > optionInterface );
+	void InitOptionRow( class UFGUserSetting* userSetting, TScriptInterface< class IFGOptionInterface > optionInterface );
 	
 	UFUNCTION( Blueprintpure, Category = "Option" )
 	FORCEINLINE EOptionCategory GetOptionCategory() const { return EOptionCategory::OC_Gameplay; }
 
 	UFUNCTION( BlueprintCallable, Category = "Option" )
 	void AddSubOption( UFGDynamicOptionsRow* dynamicOptionsRow );
+	
+	UFUNCTION( Blueprintpure, Category = "Option", meta=(DeprecatedFunction,DeprecationMessage = "DEPRECATED Use GetUserSetting instead") )
+	FORCEINLINE FOptionRowData GetOptionRowData() const { return mUserSetting ? mUserSetting->ToOptionRowData() : mOptionRowData; }
 
-protected:
 	UFUNCTION( Blueprintpure, Category = "Option" )
-	FORCEINLINE FOptionRowData GetOptionRowData() const { return mOptionRowData; }
+	FORCEINLINE UFGUserSetting* GetUserSetting() const { return mUserSetting; }
 
 	UFUNCTION( Blueprintpure, Category = "Option" )
 	FORCEINLINE UFGOptionsValueController* GetValueControllerWidget() const { return mValueControllerWidget; }
@@ -46,9 +53,12 @@ protected:
 	UFUNCTION( BlueprintImplementableEvent, BlueprintCallable, Category = "Option" )
 	void OnOptionValueUpdated();
 
-	UFUNCTION( BlueprintCallable, Category = "Option" )
+	// Called before an option is applied. So we can take action before option is applied 
+	UFUNCTION( BlueprintCallable, Category = "Option", Meta = ( DisplayName=OnOptionPreApplied ) )
 	void OnOptionApplied();
 
+	// Called when we reset an option. This is the first thing to be called before the applied value is reset back to the default value
+	// Gives the widget a chance to execute logic that is needed for the setting to be reset. Mostly useful for custom settings with custom widgets
 	UFUNCTION( BlueprintCallable, Category = "Option" )
 	void OnOptionReverted();
 
@@ -66,20 +76,33 @@ protected:
 	
 	UFUNCTION( BlueprintCallable, Category = "Option" )
 	void SetSubOptionsVisibility( bool newVisibilty ) { mSubOptionsVisibility = newVisibilty; }
+
+protected:
+	UPROPERTY( BlueprintAssignable, BlueprintCallable )
+	FOnOptionRowHovered mOnOptionRowHovered;
+
+	UPROPERTY( BlueprintAssignable, BlueprintCallable )
+	FOnOptionRowUnhovered mOnOptionRowUnhovered;
 	
 private:
 
 	FOptionRowData mOptionRowData;
 
+	UPROPERTY( Transient )
+	UFGUserSetting* mUserSetting;
+
 	EOptionType mOptionType;
+
+	UPROPERTY( Transient )
+	TScriptInterface< class IFGOptionInterface > mOptionInterface;
 	
-	UPROPERTY()
+	UPROPERTY( Transient )
 	TSubclassOf<class UFGOptionsValueController> mWidgetOptionClass;
 
-	UPROPERTY()
+	UPROPERTY( Transient )
 	UFGOptionsValueController* mValueControllerWidget;
 
-	UPROPERTY()
+	UPROPERTY( Transient )
 	TArray< UFGDynamicOptionsRow* > mSubOptions;
 
 	bool mSubOptionsVisibility;

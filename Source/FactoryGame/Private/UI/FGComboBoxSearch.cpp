@@ -3,6 +3,10 @@
 #include "UI/FGComboBoxSearch.h"
 #include "Widgets/Layout/SSpacer.h"
 
+TSharedRef<SWidget> UFGComboBoxSearch::HandleGenerateWidget(TSharedPtr<FString> Item) const {
+  return SNew(SSpacer);
+}
+
 #if WITH_EDITOR
 const FText UFGComboBoxSearch::GetPaletteCategory(){ return FText(); }
 #endif 
@@ -24,9 +28,6 @@ void UFGComboBoxSearch::PostInitProperties(){ Super::PostInitProperties(); }
 void UFGComboBoxSearch::Serialize(FArchive& Ar){ Super::Serialize(Ar); }
 void UFGComboBoxSearch::PostLoad(){ Super::PostLoad(); }
 void UFGComboBoxSearch::UpdateOrGenerateWidget(TSharedPtr<FString> Item){ }
-TSharedRef<SWidget> UFGComboBoxSearch::HandleGenerateWidget(TSharedPtr<FString> Item) const {
-  return SNew(SSpacer);
-}
 void UFGComboBoxSearch::HandleSelectionChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectionType){ }
 void UFGComboBoxSearch::HandleOpening(){ }
 TSharedRef<SWidget> UFGComboBoxSearch::RebuildWidget(){ return Super::RebuildWidget(); }
@@ -41,12 +42,12 @@ UFGComboBoxSearch::UFGComboBoxSearch(const FObjectInitializer& ObjectInitializer
 	this->EnableGamepadNavigationMode = true;
 	this->Font.FontObject = FSoftObjectPath("/Engine/EngineFonts/Roboto.Roboto").ResolveObject();
 	this->Font.FontMaterial = nullptr;
-	this->Font.OutlineSettings.OutlineSize = 0;
 	this->Font.OutlineSettings.bSeparateFillAlpha = false;
 	this->Font.OutlineSettings.bApplyOutlineToDropShadows = false;
 	this->Font.OutlineSettings.OutlineMaterial = nullptr;
+	this->Font.OutlineSettings.OutlineColor = FLinearColor(0.0, 0.0, 0.0, 1.0);
 	this->Font.TypefaceFontName = TEXT("Bold");
 	this->Font.Size = 16;
-	this->Font.LetterSpacing = 0;
+	this->Font.SkewAmount = 0.0;
 	this->bIsFocusable = true;
 }

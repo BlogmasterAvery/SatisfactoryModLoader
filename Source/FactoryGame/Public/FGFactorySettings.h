@@ -135,6 +135,38 @@ public:
 	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Connections" )
 	class UStaticMesh* mDefaultPowerConnectionMesh;
 
+	/** Mesh used to visualize forward direction of blueprints. @note Do not set in code! */
+    UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+    class UStaticMesh* mBlueprintDirectionIndicatorMesh;
+
+	/** Material for blueprint direction indicator. @note Do not set in code! */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+	class UMaterialInstance* mBlueprintDirectionIndicatorMaterial;
+
+	/** Minimum scale of the blueprint direction indicator mesh. */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+	float mBlueprintDirectionMeshScale;
+
+	/** How much forward offset to add to the blueprint direction indicator. */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+	float mBlueprintDirectionMeshForwardOffset;
+	
+	/** How much vertical offset to add to the blueprint direction indicator. */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+	float mBlueprintDirectionMeshHeightOffset;
+
+	/** How much to rotate the blueprint direction indicator (degrees). */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+	float mBlueprintDirectionMeshRotation;
+
+	/** Whether or not to put the direction mesh indicator on the ground. */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+	bool mBlueprintDirectionMeshPlaceOnGround;
+
+	/** Material for blueprint proxies. @note Do not set in code! */
+	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Blueprints" )
+	class UMaterialInstance* mBlueprintProxyMaterial;
+
 	/** Mesh used to visualize the clearance mesh on factories @note Do not set in code! */
 	UPROPERTY( EditDefaultsOnly, Category = "Hologram|Clearance" )
 	class UStaticMesh* mClearanceMesh;
@@ -202,6 +234,13 @@ public:
 	/** The default resource miner class to spawn */
 	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
 	TSubclassOf< class AFGResourceMiner > mResourceMinerClass;
+	
+	/** The class to be used as a boom box player */
+	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
+	TSubclassOf< class AFGBoomBoxPlayer > mBoomBoxPlayerClass;
+
+	UPROPERTY( EditDefaultsOnly, Category = "Equipment" )
+	TSubclassOf< class UFGItemDescriptor > mBoomBoxEquipmentDesc;
 
 	/** The mesh to be used as legs on factories */
 	UPROPERTY( EditDefaultsOnly, Category = "Legs" )
@@ -226,6 +265,10 @@ public:
 	/** The class we want to spawn for emote shortcuts */
 	UPROPERTY( EditDefaultsOnly, Category = "Shortcuts" )
 	TSubclassOf< class UFGEmoteShortcut > mEmoteShortcutClass;
+
+	/** The class we want to spawn for blueprint shortcuts */
+	UPROPERTY( EditDefaultsOnly, Category = "Shortcuts" )
+	TSubclassOf< class UFGBlueprintShortcut > mBlueprintShortcutClass;
 
 	/** Names if the input actions that defines the shortcuts. This maps directly to their index (so first entry here should mean that it should call ExecuteShortcut 0) */
 	UPROPERTY( EditDefaultsOnly, Category = "Shortcuts" )
@@ -262,5 +305,9 @@ public:
 	*/
 	UPROPERTY( EditDefaultsOnly, Category = "Pipes" )
 	TArray< FViscosityToPuddlePair > mViscosityToPuddlePairs;
+
+	/** Material Param Collection containing the panini settings so scaling can be exposed to the Settings Menu */
+	UPROPERTY( EditDefaultsOnly, Category = "Rendering" )
+	class UMaterialParameterCollection* mPaniniProjectionCollection;
 
 };

@@ -5,9 +5,40 @@
 #include "FactoryGame.h"
 #include "FGRailroadVehicle.h"
 #include "FGLocomotiveMovementComponent.h"
-#include "RailroadNavigation.h"
 #include "FGTrain.h"
 #include "FGLocomotive.generated.h"
+
+
+UENUM( BlueprintType )
+namespace ELocomotiveHeadlightsMode
+{
+	enum Type
+	{
+		LHM_Off			UMETA( DisplayName = "Off" ),
+		LHM_On			UMETA( DisplayName = "On" ),
+		LHM_Taillights	UMETA( DisplayName = "Taillights" ),
+		LHM_MAX 		UMETA( Hidden )
+	};
+}
+
+/** Small struct to contain the properties for the different headlight modes. */
+USTRUCT( BlueprintType )
+struct FHeadlightParams
+{
+	GENERATED_BODY()
+
+	/** Should we show a visible beam for the light. */
+	UPROPERTY( EditDefaultsOnly )
+	bool ShowBeam = false;
+
+	/** Color of the light. */
+	UPROPERTY( EditDefaultsOnly )
+	FLinearColor Color;
+
+	/** Intensity for the light source, does not affect the beam. */
+	UPROPERTY( EditDefaultsOnly )
+	float Intensity = 0.f;
+};
 
 
 /**
@@ -39,12 +70,18 @@ public:
 	// Begin ADriveablePawn/AFGVehicle interface
 	virtual bool DriverEnter( class AFGCharacterPlayer* driver ) override;
 	virtual bool DriverLeave( bool keepDriving = false ) override;
+	virtual void AddInputBindings( UInputComponent* inputComponent ) override;
+	virtual bool CanLeaveVehicle( AFGCharacterPlayer* character ) override;
 	// End ADriveablePawn/AFGVehicle interface
 		
 	// Begin ARailroadVehicle interface
 	virtual void UpdatePower() override;
 	virtual class UFGPowerConnectionComponent* GetSlidingShoe() const override { return mSlidingShoe; }
 	// End ARailroadVehicle interface
+	
+	//Begin IFGSignificanceInterface
+	virtual void GainedSignificance_Implementation() override;
+	//End IFGSignificanceInterface
 
 	/**
 	 * Get the role for this locomotive when MUing.
@@ -77,7 +114,7 @@ public:
 
 	/** Get the power info about this train. If it runs on electricity. */
 	UFUNCTION( BlueprintCallable, Category = "FactoryGame|Railroad|Locomotive" )
-	UFGPowerInfoComponent* GetPowerInfo() const { return mPowerInfo; }
+	class UFGPowerInfoComponent* GetPowerInfo() const { return mPowerInfo; }
 
 	/** Debug */
 	virtual void DisplayDebug( class UCanvas* canvas, const class FDebugDisplayInfo& debugDisplay, float& YL, float& YPos ) override;
@@ -106,6 +143,16 @@ public:
 	 * This can be upon entering the locomotive or when disabling the self driver.
 	 */
 	void GiveHumanDriverControl();
+
+	/** Update the headlights to correctly reflect the state of the train. I.e. direction, power etc. */
+	void UpdateHeadlightsMode();
+
+	/**
+	 * @return true if the headlights are on, otherwise false.
+	 */
+	ELocomotiveHeadlightsMode::Type GetHeadlightsMode() const { return mHeadlightMode; }
+
+	void OpenLocomotiveMenu();
 	
 protected:
 	/** Called from tick if train is significant. */
@@ -119,12 +166,40 @@ protected:
 	/** Called when the player releases the horn input. (Called on server and client) */
 	UFUNCTION( BlueprintImplementableEvent )
     void OnHonkEnd();
+
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Railroad|Locomotive" )
+	bool IsInputEnabled() const;
+
+	/** Input Actions */
+	UFUNCTION()
+	void Input_ThrottleAxis_Started( const FInputActionValue& actionValue );
+	
+	UFUNCTION()
+	void Input_ThrottleAxis( const FInputActionValue& actionValue );
+
+	UFUNCTION()
+	void Input_SteerAxis( const FInputActionValue& actionValue );
+	
+	UFUNCTION()
+	void Input_Handbrake( const FInputActionValue& actionValue );
+
+	UFUNCTION()
+	void Input_Honk( const FInputActionValue& actionValue );
+	
+	UFUNCTION()
+	void Input_OpenLocomotiveMenu( const FInputActionValue& actionValue );
 	
 private:
 	/** Used by the movement component to control the power usage. */
 	void SetPowerConsumption( float pct );
 	void SetPowerRegeneration( float pct );
 
+	/** Called when the power status changes for this locomotive. */
+	void OnHasPowerChanged();
+
+	/** Called whenever the headlight mode has been changed (both server and client) so the lights can be configured. */
+	UFUNCTION()
+	void OnRep_HeadlightMode();
 public:
 	/** Name of the VehicleMovement. Use this name if you want to use a different class (with ObjectInitializer.SetDefaultSubobjectClass). */
 	static FName VehicleMovementComponentName;
@@ -144,7 +219,7 @@ private:
 
 	/** Has power. Used to keep clients in sync with circuit power state */
 	UPROPERTY( Replicated )
-	uint8 mHasPower : 1;
+	bool mHasPower;
 
 	/** vehicle simulation component */
 	UPROPERTY( VisibleDefaultsOnly, BlueprintReadOnly, Category = Vehicle, meta = ( AllowPrivateAccess = "true" ) )
@@ -152,4 +227,18 @@ private:
 
 	/** True if we're honking right now. */
 	bool mIsHonking;
+
+	/** Remember the state of the headlights, use the setter to set this so that the light and meshes gets updated. */
+	UPROPERTY( ReplicatedUsing = OnRep_HeadlightMode )
+	TEnumAsByte< ELocomotiveHeadlightsMode::Type > mHeadlightMode;
+
+	/**
+	 * Parameters for the different headlight modes.
+	 */
+	UPROPERTY( EditDefaultsOnly, Category = Vehicle )
+	FHeadlightParams mHeadlightModes[ ELocomotiveHeadlightsMode::LHM_MAX ];
+
+	/** The widget that is shown when player interact with the locomotive from inside the locomotive, Train scheduler etc. */
+	UPROPERTY( EditDefaultsOnly, Category = Vehicle )
+	TSoftClassPtr<UFGInteractWidget> mLocomotiveMenuWidgetClass;
 };

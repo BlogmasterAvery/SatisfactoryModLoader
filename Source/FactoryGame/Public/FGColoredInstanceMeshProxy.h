@@ -8,7 +8,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "FGColoredInstanceMeshProxy.generated.h"
 
-
 /**
  * Proxy placed in buildings to be replaced with an instance on creation, supports coloring.
  */
@@ -45,12 +44,18 @@ public:
 
 private:
 	void InstantiateInternal();
-
+	virtual void PostLoad() override;
 public:
 
 	UPROPERTY( EditDefaultsOnly, BlueprintReadWrite )
 	bool mBlockInstancing = false;
 
+	UPROPERTY( EditDefaultsOnly, BlueprintReadWrite )
+	bool mBlockColoring = false;
+
+	UPROPERTY( EditDefaultsOnly, BlueprintReadWrite )
+	bool mHasScalabilityMaterial = false;
+	
 	/** Only used for holding info about where the instance is located, for quicker changes.*/
 	UFGColoredInstanceManager::FInstanceHandle mInstanceHandle;
 

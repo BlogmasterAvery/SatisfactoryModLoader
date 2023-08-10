@@ -7,6 +7,7 @@
 #include "Equipment/FGEquipment.h"
 #include "FGEquipmentStunSpear.generated.h"
 
+class UFGDamageType;
 /**
  * 
  */
@@ -16,16 +17,15 @@ class FACTORYGAME_API AFGEquipmentStunSpear : public AFGEquipment
 	GENERATED_BODY()
 
 public:
-
 	AFGEquipmentStunSpear();
-
-	/** Add custom bindings for this equipment */
-	virtual void AddEquipmentActionBindings() override;
-
+	
 	/** Called when the player clicks to "fire" */
 	UFUNCTION( BlueprintImplementableEvent, Category = "Stun Spear" )
-	void PlayStunEffects();
+	void PlayStunEffects( bool secondSwing );
 
+	UFUNCTION( BlueprintImplementableEvent, Category = "Stun Spear" )
+	void PlayHitEffects( const TArray<FHitResult>& hitResults );
+	
 	/** Getter for mShouldPlaySecondSwing */
 	UFUNCTION( BlueprintPure, Category = "Stun Spear" )
 	FORCEINLINE bool GetShouldPlaySecondSwing(){ return mShouldPlaySecondSwing; }
@@ -33,25 +33,33 @@ public:
 	/** Start the damage chain */
 	UFUNCTION( BlueprintCallable, Category = "Stun Spear" )
 	void DoAttack();
-	
-	UFUNCTION( BlueprintNativeEvent, Category = "Hit Response" )
-	void OnHitTarget();
-
 protected:
+	virtual void HandleDefaultEquipmentActionEvent( EDefaultEquipmentAction action, EDefaultEquipmentActionEvent actionEvent ) override;
+	
 	/** server notified of hit from client to verify */
-	UFUNCTION( Reliable, Server, WithValidation )
-	void Server_ShockEnemy();
-private:
-	/** Key binded functions */
-	virtual void OnFirePressed();
+	UFUNCTION( Reliable, Server )
+	void Server_ShockEnemy( const FVector& attackDirection );
+
+	UFUNCTION( Reliable, Server )
+	void Server_PlayStunEffects( bool secondSwing );
+
+	UFUNCTION( Unreliable, NetMulticast )
+	void Multicast_PlayHitEffects(const TArray<FHitResult> &hitResults);
+
+	UFUNCTION( Unreliable, NetMulticast )
+	void Multicast_PlayStunEffects( bool secondSwing );
 private:
 	/** Sphere collision component */
 	UPROPERTY( VisibleDefaultsOnly, Category = "Stun Spear" )
 	class USphereComponent* mCollisionComp;
 
-	/** Damage type to use when hitting others */
+	UPROPERTY( EditDefaultsOnly, Instanced, Category= "Stun Spear")
+	TArray < UFGDamageType* > mDamageTypes;
+	
+	/** The noise to make when attacking with the spear. */
 	UPROPERTY( EditDefaultsOnly, Category = "Stun Spear" )
-	TSubclassOf< class UFGDamageType > mDamageTypeClass;	
+	TSubclassOf< class UFGNoise > mAttackNoise;
+
 public:
 	/** Timer started */
 	float mFirstSwingTime;
@@ -70,11 +78,11 @@ public:
 	UPROPERTY( EditDefaultsOnly, Category = "Stun Spear" )
 	float mSecondSwingCooldDownTime;
 
-	/** Damage amount */
-	UPROPERTY( EditDefaultsOnly, Category = "Stun Spear" )
-	int32 mDamage;
-
 	/** How much inf ront of character the attack is */
 	UPROPERTY( EditDefaultsOnly, Category = "Stun Spear" )
 	float mAttackDistance;
+
+	/** Defined half-width of the attack in front of the instigator */
+	UPROPERTY( EditDefaultsOnly, Category = "Stun Spear" )
+	float mAttackSweepRadius;
 };

@@ -7,6 +7,30 @@
 #include "FGEventSubsystem.h"
 #include "FGRecipe.generated.h"
 
+// A simple struct to expose a recipe amount pair to blueprints
+USTRUCT( BlueprintType )
+struct FRecipeAmountPair
+{
+	GENERATED_BODY()
+
+	/** Recipe to give player */
+	UPROPERTY( EditDefaultsOnly, Category = "Recipe" )
+	TSoftClassPtr< class UFGRecipe > Recipe;
+
+	/** How many of given recipe */
+	UPROPERTY( EditDefaultsOnly, Category = "Recipe" )
+	int32 Amount;
+};
+
+// Exposes FRecipeAmount as an array
+USTRUCT( BlueprintType )
+struct FRecipeAmounts
+{
+	GENERATED_BODY()
+
+	UPROPERTY( EditDefaultsOnly, Category = "Recipe" )
+	TArray<FRecipeAmountPair> RecipeAmountPairs;
+};
 
 /**
  * This is a class describing a recipe, subclass this in blueprint to make a new recipe.
@@ -118,11 +142,11 @@ protected:
 	FText mDisplayName;
 
 	/** Ingredients needed to produce the products. */
-	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Category = "Recipe" )
+	UPROPERTY( EditDefaultsOnly, Category = "Recipe" )
 	TArray< FItemAmount > mIngredients;
 	
 	/** The products produced from this recipe. */
-	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Category = "Recipe" )
+	UPROPERTY( EditDefaultsOnly, Category = "Recipe" )
 	TArray< FItemAmount > mProduct;
 
 	/** The overridden category. If not overridden we return the item category given by the produced item */
@@ -142,7 +166,7 @@ protected:
 	float mManualManufacturingMultiplier;
 
 	/** Defines where this recipe can be produced */
-	UPROPERTY( BlueprintReadWrite, EditDefaultsOnly, Meta = ( MustImplement = "FGRecipeProducerInterface", Category = "Recipe" ) )
+	UPROPERTY( EditDefaultsOnly, Meta = ( MustImplement = "FGRecipeProducerInterface", Category = "Recipe" ) )
 	TArray< TSoftClassPtr< UObject > > mProducedIn;
 
 	/** Material Descriptor Definition Recipe. This is the material descriptor recipe that corresponds to a building recipe. This is used 
